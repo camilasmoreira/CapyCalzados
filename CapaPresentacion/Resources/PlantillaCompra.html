@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+    <title>Factura de Compra</title>
+    <style>
+        /*body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);*/ /* Sombra más ligera */
+            /*border-radius: 5px;*/ /* Borde redondeado menor */
+        /*}*/
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+            .header label {
+                font-size: 26px;
+                font-weight: bold;
+                color: #004085;
+            }
+
+            .header small {
+                display: block;
+                margin-top: 5px;
+                font-size: 12px;
+                color: #555;
+            }
+
+        .info-section, .product-table, .total-section {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+            .info-section td {
+                padding: 10px 5px;
+            }
+
+            .product-table th, .product-table td {
+                padding: 15px;
+                border: 1px solid #ddd;
+                text-align: center;
+                /* Añadir espacio entre la tabla y los bordes de la factura */
+                margin-top: 20px; /* Por ejemplo */
+            }
+
+
+            .product-table th {
+                background-color: #004085;
+                color: #fff;
+                font-weight: bold;
+            }
+
+            .product-table tbody tr:nth-child(even) {
+                background-color: #f7f7f7;
+            }
+
+        .total-section {
+            width: 30%;
+            float: right;
+            margin-top: 20px;
+        }
+
+            .total-section th, .total-section td {
+                padding: 15px;
+                text-align: center;
+                font-size: 16px;
+                background-color: #f1f1f1;
+                border: 1px solid #ddd;
+            }
+
+        .highlight {
+            background-color: #004085;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <label>@nombrenegocio</label><br />
+            <small>RUC: @docnegocio</small><br />
+            <small>Dirección: @direcnegocio</small><br />
+        </div>
+        <br />
+        <!-- Tipo y número de documento -->
+        <div class="highlight">
+            <strong>@tipodocumento - @numerodocumento</strong>
+        </div>
+        <br />
+        <!-- Información del proveedor -->
+        <table class="info-section">
+            <tr>
+                <td style="width: 40%; font-weight: bold;">Documento Proveedor:</td>
+                <td>@docproveedor</td>
+            </tr>
+            <tr>
+                <td style="width: 40%; font-weight: bold;">Nombre Proveedor:</td>
+                <td>@nombreproveedor</td>
+            </tr>
+            <tr>
+                <td style="width: 40%; font-weight: bold;">Fecha Registro:</td>
+                <td>@fecharegistro</td>
+            </tr>
+            <tr>
+                <td style="width: 40%; font-weight: bold;">Nombre Vendedor:</td>
+                <td>@usuarioregistro</td>
+            </tr>
+        </table>
+
+        <!-- Productos -->
+        <table class="product-table" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio Compra</th>
+                    <th>Cantidad</th>
+                    <th>Sub Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @filas
+            </tbody>
+        </table>
+
+        <!-- Monto total -->
+        <table class="total-section">
+            <thead>
+                <tr>
+                    <th>Monto Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>@montototal</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Footer opcional -->
+        <div class="footer">
+            <small>Gracias por su compra. Si tiene alguna consulta, no dude en contactarnos.</small>
+        </div>
+    </div>
+</body>
+</html>
