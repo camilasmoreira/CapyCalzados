@@ -1,9 +1,10 @@
-﻿using CapaEntidad; 
+using CapaEntidad; 
 using CapaNegocio; 
 using CapaPresentacion.Utilidades; 
 using System; 
 using System.Collections.Generic; 
 using System.Drawing; 
+using System.Linq;
 using System.Windows.Forms; 
 
 namespace CapaPresentacion // Define el espacio de nombres para la capa de presentación.
@@ -20,8 +21,8 @@ namespace CapaPresentacion // Define el espacio de nombres para la capa de prese
 
         private void FrmCategoria_Load(object sender, EventArgs e) // Maneja el evento de carga del formulario.
         {
+            TemaCapybara.AplicarTema(this);
 
-         
             // Agrega opciones de estado al comboEstado.
             comboEstado.Items.Add(new OpcionesCombo() { Valor = 1, Texto = "Activo" });
             comboEstado.Items.Add(new OpcionesCombo() { Valor = 0, Texto = "No Activo" });
@@ -42,8 +43,11 @@ namespace CapaPresentacion // Define el espacio de nombres para la capa de prese
             comboBusqueda.ValueMember = "Valor"; // Define el miembro que tendrá el valor del combo.
             comboBusqueda.SelectedIndex = 0; // Establece el primer elemento como seleccionado.
 
-            // Muestra las categorías en el DataGridView.
-            List<Categoria> listaCategorias = new CN_Categoria().Listar(); // Obtiene la lista de categorías.
+            // Muestra SOLO las categorías Zapatillas Urbanas y Zapatillas Deportivas en el DataGridView.
+            List<Categoria> listaCategorias = new CN_Categoria().Listar()
+                .Where(c => c.Descripcion.Equals("Zapatillas Urbanas", StringComparison.OrdinalIgnoreCase) ||
+                            c.Descripcion.Equals("Zapatillas Deportivas", StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
             foreach (Categoria item in listaCategorias)
             {
@@ -79,6 +83,14 @@ namespace CapaPresentacion // Define el espacio de nombres para la capa de prese
         {
             if (Validaciones()) // Verifica si los campos son válidos.
             {
+                string desc = txtDescripcion.Texts.Trim();
+                if (!desc.Equals("Zapatillas Urbanas", StringComparison.OrdinalIgnoreCase) &&
+                    !desc.Equals("Zapatillas Deportivas", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show("Solo se permiten las categorías: Zapatillas Urbanas y Zapatillas Deportivas.", "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 DialogResult confirmacion; // Variable para almacenar la respuesta del diálogo de confirmación.
                 string mensaje = string.Empty; // Mensaje para almacenar posibles errores.
 
@@ -203,24 +215,9 @@ namespace CapaPresentacion // Define el espacio de nombres para la capa de prese
             LimpiarCampos(); // Limpia los campos.
         }
 
-        private void dgvData_CellPainting_1(object sender, DataGridViewCellPaintingEventArgs e) // Maneja el evento de pintura de celdas del DataGridView.
+        private void dgvData_CellPainting_1(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            if (e.RowIndex < 0) // Si no es una fila válida.
-            {
-                return;
-            }
-            if (e.ColumnIndex == 0) // Si la columna es la primera.
-            {
-                e.Paint(e.CellBounds, DataGridViewPaintParts.All); // Dibuja la celda.
-                var w = Properties.Resources.comprobado.Width - 15; // Ancho de la imagen.
-                var h = Properties.Resources.comprobado.Height - 15; // Alto de la imagen.
-
-                var x = e.CellBounds.Left + (e.CellBounds.Width - w) / 2; // Calcula la posición X para centrar la imagen.
-                var y = e.CellBounds.Top + (e.CellBounds.Height - h) / 2; // Calcula la posición Y para centrar la imagen.
-
-                e.Graphics.DrawImage(Properties.Resources.comprobado, new Rectangle(x, y, w, h)); // Dibuja la imagen en la celda.
-                e.Handled = true; // Marca el evento como manejado.
-            }
+            TemaCapybara.ModernDgv_CellPainting(sender, e);
         }
 
         private void btnBuscar_Click(object sender, EventArgs e) // Maneja el evento click del botón buscar.

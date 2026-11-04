@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Utilidades;
 using System;
@@ -88,6 +88,7 @@ namespace CapaPresentacion
 
         private void FrmUsuario_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
             // Inicializa los elementos del comboEstado
             comboEstado.Items.Add(new OpcionesCombo() { Valor = 1, Texto = "Activo" });
             comboEstado.Items.Add(new OpcionesCombo() { Valor = 0, Texto = "No Activo" });
@@ -200,22 +201,7 @@ namespace CapaPresentacion
 
         private void dgvData_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            if (e.RowIndex < 0) // Verifica que no se esté pintando el encabezado
-            {
-                return;
-            }
-            if (e.ColumnIndex == 0) // Verifica si es la primera columna
-            {
-                e.Paint(e.CellBounds, DataGridViewPaintParts.All); // Dibuja el contenido de la celda
-                var w = Properties.Resources.comprobado.Width - 15; // Ancho de la imagen
-                var h = Properties.Resources.comprobado.Height - 15; // Altura de la imagen
-
-                var x = e.CellBounds.Left + (e.CellBounds.Width - w) / 2; // Posición X
-                var y = e.CellBounds.Top + (e.CellBounds.Height - h) / 2; // Posición Y
-
-                e.Graphics.DrawImage(Properties.Resources.comprobado, new Rectangle(x, y, w, h)); // Dibuja la imagen
-                e.Handled = true; // Marca la celda como manejada
-            }
+            TemaCapybara.ModernDgv_CellPainting(sender, e);
         }
 
         private void btnEliminar_Click(object sender, EventArgs e)

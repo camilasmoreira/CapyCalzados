@@ -1,15 +1,9 @@
 using CapaEntidad;
 using CapaNegocio;
-using DocumentFormat.OpenXml.Bibliography;
 using System;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Windows;
 using System.Windows.Forms;
-using MessageBox = System.Windows.Forms.MessageBox;
-using Point = System.Drawing.Point;
 
 namespace CapaPresentacion
 {
@@ -25,18 +19,66 @@ namespace CapaPresentacion
         // Evento que se dispara cuando se carga el formulario Login.
         private void Login_Load(object sender, EventArgs e)
         {
-            // Configura la transparencia y ubicación de los controles en el formulario.
-            Titulo.Parent = Fondo; // Asigna el fondo como padre del control Título.
-            Titulo.BackColor = Color.Transparent; // Establece el fondo del título como transparente.
-            Titulo.Location = new Point(120, 200); // Define la ubicación del título.
+            // Asigna Fondo como contenedor padre para transparencia visual sobre la imagen
+            lblHeroTag.Parent = Fondo;
+            lblHeroTag.BackColor = Color.Transparent;
 
-            Desc.Parent = Fondo; // Asigna el fondo como padre del control Descripción.
-            Desc.BackColor = Color.Transparent; // Establece el fondo de la descripción como transparente.
-            Desc.Location = new Point(134, 296); // Define la ubicación de la descripción.
+            Titulo.Parent = Fondo;
+            Titulo.BackColor = Color.Transparent;
 
-            btnSalir.Parent = Fondo; // Asigna el fondo como padre del botón Salir.
-            btnSalir.BackColor = Color.Transparent; // Establece el fondo del botón como transparente.
-            btnSalir.Location = new Point(528, 0); // Define la ubicación del botón Salir.
+            lblHeroSub.Parent = Fondo;
+            lblHeroSub.BackColor = Color.Transparent;
+
+            Desc.Parent = Fondo;
+            Desc.BackColor = Color.Transparent;
+
+            lblHeroBadge.Parent = Fondo;
+            lblHeroBadge.BackColor = Color.Transparent;
+
+            btnSalir.Parent = Fondo;
+            btnSalir.BackColor = Color.FromArgb(140, 20, 14, 10);
+            btnSalir.Location = new Point(Fondo.Width - 44, 8);
+
+            // Suscribir el dibujado de la tarjeta translúcida sobre Fondo
+            Fondo.Paint -= Fondo_Paint;
+            Fondo.Paint += Fondo_Paint;
+
+            // Asegurar estilos Capybara en campos
+            campoDNI.BackColor = Color.FromArgb(28, 20, 16);
+            campoDNI.ForeColor = Color.White;
+            campoDNI.BorderColor = Color.FromArgb(90, 65, 48);
+            campoDNI.BorderFocusColor = Color.FromArgb(217, 130, 43);
+
+            campoClave.BackColor = Color.FromArgb(28, 20, 16);
+            campoClave.ForeColor = Color.White;
+            campoClave.BorderColor = Color.FromArgb(90, 65, 48);
+            campoClave.BorderFocusColor = Color.FromArgb(217, 130, 43);
+
+            rjButton1.BackColor = Color.FromArgb(217, 130, 43);
+            rjButton1.BackgroundColor = Color.FromArgb(217, 130, 43);
+            rjButton1.TextColor = Color.White;
+
+            // Enfocar campo de documento al abrir
+            campoDNI.Select();
+        }
+
+        private void Fondo_Paint(object sender, PaintEventArgs e)
+        {
+            // Dibujar tarjeta translúcida oscura con borde yuzu para máxima legibilidad y estilo premium
+            int cardX = 45;
+            int cardY = 115;
+            int cardWidth = 475;
+            int cardHeight = 245;
+
+            using (SolidBrush brush = new SolidBrush(Color.FromArgb(175, 20, 14, 10)))
+            {
+                e.Graphics.FillRectangle(brush, cardX, cardY, cardWidth, cardHeight);
+            }
+
+            using (Pen pen = new Pen(Color.FromArgb(100, 217, 130, 43), 1))
+            {
+                e.Graphics.DrawRectangle(pen, cardX, cardY, cardWidth, cardHeight);
+            }
         }
 
         // Evento para cerrar el formulario cuando se presiona el botón "Salir".
@@ -48,112 +90,100 @@ namespace CapaPresentacion
         // Evento que se dispara al hacer clic en el botón "Ingresar" para validar credenciales.
         private void btnIngresar_Click(object sender, EventArgs e)
         {
-            // Busca el usuario en la base de datos mediante el documento y la clave proporcionados.
-            Usuario ousuario = new CN_Usuario().Listar().Where(u => u.Documento == campoDNI.Text && u.Clave == campoClave.Text && u.Estado == true).FirstOrDefault();
+            ValidarIngreso();
+        }
 
-            // Si el usuario es encontrado y está activo, abre el formulario principal "Inicio".
+        // Evento alternativo para el botón "Ingresar"
+        private void btnIngresar2_Click(object sender, EventArgs e)
+        {
+            ValidarIngreso();
+        }
+
+        private void ValidarIngreso()
+        {
+            string documento = !string.IsNullOrEmpty(campoDNI.Texts) ? campoDNI.Texts.Trim() : campoDNI.Text.Trim();
+            string clave = !string.IsNullOrEmpty(campoClave.Texts) ? campoClave.Texts.Trim() : campoClave.Text.Trim();
+
+            Usuario ousuario = new CN_Usuario().Listar().Where(u => u.Documento == documento && u.Clave == clave && u.Estado == true).FirstOrDefault();
+
             if (ousuario != null)
             {
-                Inicio form = new Inicio(ousuario); // Crea una instancia del formulario Inicio pasando el usuario.
-                form.Show(); // Muestra el formulario de Inicio.
-                this.Hide(); // Oculta el formulario de Login.
+                Inicio form = new Inicio(ousuario);
+                form.Show();
+                this.Hide();
 
-                form.FormClosing += frm_closing; // Asocia el evento de cierre del formulario para reiniciar Login.
+                form.FormClosing += frm_closing;
             }
             else
             {
-                // Muestra un mensaje de advertencia si no se encuentra el usuario.
-                System.Windows.MessageBox.Show("No se encuentra el Usuario", "Alerta", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                MessageBox.Show("No se encuentra el Usuario o las credenciales son incorrectas.\n\nUsuario demo:\nDocumento: 1234\nClave: 1234", "Alerta de Acceso", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 
         // Evento que se dispara cuando el formulario "Inicio" se cierra.
         private void frm_closing(object sender, FormClosingEventArgs e)
         {
-            campoClave.Text = ""; // Limpia el campo de la clave.
-            campoDNI.Text = ""; // Limpia el campo del documento.
-            this.Show(); // Muestra de nuevo el formulario Login.
-        }
-
-        // Evento alternativo para el botón "Ingresar" que utiliza otra propiedad para los textos.
-        private void btnIngresar2_Click(object sender, EventArgs e)
-        {
-            // Similar al evento btnIngresar_Click pero usa campoDNI.Texts y campoClave.Texts.
-            Usuario ousuario = new CN_Usuario().Listar().Where(u => u.Documento == campoDNI.Texts && u.Clave == campoClave.Texts && u.Estado == true).FirstOrDefault();
-
-            if (ousuario != null)
-            {
-                Inicio form = new Inicio(ousuario); // Abre el formulario Inicio.
-                form.Show(); // Muestra el formulario Inicio.
-                this.Hide(); // Oculta el formulario Login.
-
-                form.FormClosing += frm_closing; // Asocia el evento para cuando el formulario Inicio se cierre.
-            }
-            else
-            {
-                System.Windows.MessageBox.Show("No se encuentra el Usuario", "Alerta", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-            }
-        }
-
-        // Evento para cerrar el formulario al hacer clic en el botón correspondiente (icono).
-        private void iconButton1_Click(object sender, EventArgs e)
-        {
-            this.Close(); // Cierra el formulario Login.
+            campoClave.Texts = "";
+            campoDNI.Texts = "";
+            this.Show();
+            campoDNI.Select();
         }
 
         // Validación para restringir el número máximo de caracteres en el campo de clave.
         private void campoClave_KeyPress(object sender, KeyPressEventArgs e)
         {
-            bool esControl = Char.IsControl(e.KeyChar); // Verifica si la tecla presionada es de control.
-            bool longitudPermitida = campoClave.Texts.Trim().Length < 80; // Permite hasta 80 caracteres.
+            bool esControl = Char.IsControl(e.KeyChar);
+            bool longitudPermitida = campoClave.Texts.Trim().Length < 80;
 
-            // Permite la entrada solo si es una tecla de control o si no se ha alcanzado el límite.
             if (longitudPermitida || esControl)
             {
-                e.Handled = false; // Permite el carácter.
+                e.Handled = false;
             }
             else
             {
-                e.Handled = true; // Bloquea el carácter.
+                e.Handled = true;
             }
         }
 
         // Validación para permitir solo dígitos en el campo de documento (DNI) y limitar la longitud.
         private void campoDNI_KeyPress(object sender, KeyPressEventArgs e)
         {
-            bool esControl = Char.IsControl(e.KeyChar); // Verifica si la tecla presionada es de control.
-            bool esDigito = Char.IsDigit(e.KeyChar); // Verifica si el carácter es un dígito.
-            bool longitudPermitida = campoDNI.Texts.Length < 8; // Permite hasta 8 dígitos.
+            bool esControl = Char.IsControl(e.KeyChar);
+            bool esDigito = Char.IsDigit(e.KeyChar);
+            bool longitudPermitida = campoDNI.Texts.Length < 8;
 
-            // Permite solo dígitos y teclas de control si la longitud es permitida.
             if (esControl || (esDigito && longitudPermitida))
             {
-                e.Handled = false; // Permite el carácter.
+                e.Handled = false;
             }
             else
             {
-                e.Handled = true; // Bloquea el carácter.
+                e.Handled = true;
             }
         }
 
         private void campoDNI_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyData == Keys.Enter) // Si el usuario presiona la tecla Enter.
+            if (e.KeyData == Keys.Enter)
             {
-                if(campoDNI.Texts != "" && campoClave.Texts != "")
+                if (!string.IsNullOrWhiteSpace(campoDNI.Texts) && !string.IsNullOrWhiteSpace(campoClave.Texts))
                 {
-                    btnIngresar2_Click(sender,e);
+                    ValidarIngreso();
+                }
+                else if (!string.IsNullOrWhiteSpace(campoDNI.Texts))
+                {
+                    campoClave.Focus();
                 }
             }
         }
 
         private void campoClave_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyData == Keys.Enter) // Si el usuario presiona la tecla Enter.
+            if (e.KeyData == Keys.Enter)
             {
-                if (campoDNI.Texts != "" && campoClave.Texts != "")
+                if (!string.IsNullOrWhiteSpace(campoDNI.Texts) && !string.IsNullOrWhiteSpace(campoClave.Texts))
                 {
-                    btnIngresar2_Click(sender, e);
+                    ValidarIngreso();
                 }
             }
         }

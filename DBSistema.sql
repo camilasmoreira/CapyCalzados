@@ -115,6 +115,7 @@ GO
 CREATE TABLE Venta(
 IdVenta int primary key identity,
 IdUsuario int references Usuario(IdUsuario),
+IdCliente int references Cliente(IdCliente),
 TipoDocumento varchar(50),
 NumeroDocumento varchar(50),
 DocumentoCliente varchar(50),
@@ -840,6 +841,7 @@ go
 
 Create procedure SP_REGISTRARVENTA(
 @IdUsuario int,
+@IdCliente int = null,
 @TipoDocumento varchar(50),
 @NumeroDocumento varchar(50),
 @DocumentoCliente varchar(50),
@@ -860,8 +862,8 @@ begin
 
 		begin transaction registro
 
-		insert into Venta(IdUsuario,TipoDocumento,NumeroDocumento,DocumentoCliente,NombreCliente,MontoPago,MontoCambio,MontoTotal)
-		values(@IdUsuario,@TipoDocumento,@NumeroDocumento,@DocumentoCliente,@NombreCliente,@MontoPago,@MontoCambio,@MontoTotal)
+		insert into Venta(IdUsuario,IdCliente,TipoDocumento,NumeroDocumento,DocumentoCliente,NombreCliente,MontoPago,MontoCambio,MontoTotal)
+		values(@IdUsuario,IIF(@IdCliente = 0, null, @IdCliente),@TipoDocumento,@NumeroDocumento,@DocumentoCliente,@NombreCliente,@MontoPago,@MontoCambio,@MontoTotal)
 		set @idventa = SCOPE_IDENTITY()
 
 		
@@ -943,6 +945,7 @@ BEGIN
         dv.SubTotal
     FROM Venta v
     INNER JOIN Usuario u ON u.IdUsuario = v.IdUsuario
+    LEFT JOIN Cliente c ON c.IdCliente = v.IdCliente
     INNER JOIN Detalle_Venta dv ON dv.IdVenta = v.IdVenta
     INNER JOIN Productos p ON p.IdProducto = dv.IdProducto
     INNER JOIN Categorias ca ON ca.IdCategoria = p.IdCategoria
@@ -960,13 +963,13 @@ Create procedure SP_DATOSGRAFICOS
 @totUser int out,
 @totClientes int out
 as
-set @totVentas = (select sum(MontoTotal) as TotVentas from Venta)
-set @totCompras = (select sum(c.MontoTotal) as TotCompras from Compra as c)
-set @totProveedores = (select sum(IdProveedor) as TotProveedores from Proveedor)
-set @totProd = (select sum(IdProducto) as TotProd from Productos)
-set @totCat = (select sum(IdCategoria) as TotCat from Categorias)
-set @totUser = (select sum(IdUsuario) as TotUser from Usuario)
-set @totClientes = (select sum(IdCliente) as TotClientes from Cliente)
+set @totVentas = isnull((select sum(MontoTotal) as TotVentas from Venta), 0)
+set @totCompras = isnull((select sum(c.MontoTotal) as TotCompras from Compra as c), 0)
+set @totProveedores = isnull((select count(IdProveedor) as TotProveedores from Proveedor), 0)
+set @totProd = isnull((select count(IdProducto) as TotProd from Productos), 0)
+set @totCat = isnull((select count(IdCategoria) as TotCat from Categorias), 0)
+set @totUser = isnull((select count(IdUsuario) as TotUser from Usuario), 0)
+set @totClientes = isnull((select count(IdCliente) as TotClientes from Cliente), 0)
 go
 
 create procedure SP_PRODPREFERIDOS
@@ -1066,7 +1069,36 @@ VALUES('1234','Tester','test@gmail.com','1234',1,1)
 go
 
 insert into Negocio(Nombre,RUC,Direccion) 
-values('GK Innovatech',10000,'Av.Armenia 3400')
+values('CapyCalzados - Venta de Calzados',10000,'Av. Corrientes 1234')
+go
+
+-- Categorias de Calzados
+insert into Categorias(Descripcion, Estado) values
+('Zapatillas Urbanas', 1),
+('Zapatillas Deportivas', 1),
+('Zapatos de Vestir', 1),
+('Botas y Borcegos', 1),
+('Sandalias y Ojotas', 1),
+('Mocasines', 1)
+go
+
+-- Cliente de prueba
+insert into Cliente(Documento, NombreCompleto, Correo, Telefono, Estado)
+values('40123456', 'Juan Pérez', 'juan.perez@email.com', '1145678901', 1)
+go
+
+-- Proveedor de calzados de prueba
+insert into Proveedor(Documento, RazonSocial, Correo, Telefono, Estado)
+values('30-71234567-8', 'Distribuidora Central Calzados S.A.', 'ventas@districalzados.com', '1155554444', 1)
+go
+
+-- Productos de calzado de prueba (Nombre, Talle/Color en Descripción, Marca)
+insert into Productos(Codigo, Nombre, Descripcion, Marca, IdCategoria, Stock, PrecioCompra, PrecioVenta, Estado) values
+(1001, 'Nike Air Max SC', 'Talle 41 - Negro/Blanco', 'Nike', 2, 15, 45000.00, 75000.00, 1),
+(1002, 'Adidas Superstar', 'Talle 40 - Blanco Rayas Negras', 'Adidas', 1, 20, 42000.00, 69000.00, 1),
+(1003, 'Zapato Oxford Cuero', 'Talle 42 - Marrón Suela', 'Briganti', 3, 10, 55000.00, 92000.00, 1),
+(1004, 'Bota Chelsea Clásica', 'Talle 38 - Suela Gamuzado', 'Grimoldi', 4, 8, 48000.00, 81000.00, 1),
+(1005, 'Mocasín Náutico', 'Talle 43 - Azul Marino', 'Heyas', 6, 12, 38000.00, 62000.00, 1)
 go
 
 Create table BackupR(

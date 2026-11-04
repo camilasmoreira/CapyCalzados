@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace CapaEntidad
@@ -7,9 +7,11 @@ namespace CapaEntidad
     {
         public int IdVenta { get; set; }
         public Usuario oUsuario { get; set; }
+        public Cliente oCliente { get; set; }
         public String TipoDocumento { get; set; }
         public String NumeroDocumento { get; set; }
         public String DocumentoCliente { get; set; }
+        public String FormaPago { get; set; }
  
         public int IdCupon { get; set; }
         public String NombreCliente { get; set; }

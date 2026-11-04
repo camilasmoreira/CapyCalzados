@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Modales;
 using CapaPresentacion.Utilidades;
@@ -6,7 +6,6 @@ using System;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Windows.Controls;
 using System.Windows.Forms;
 
 namespace CapaPresentacion
@@ -15,6 +14,9 @@ namespace CapaPresentacion
     {
         private Usuario usuarioActual;
         public Inicio inicio { get; set; }
+        private ComboBox comboFormaPago;
+        private Label lblFormaPago;
+
         public FrmVentas(Usuario oUsuario, Inicio pinicio)
         {
             usuarioActual = oUsuario; // Se asigna el usuario actual que inició la sesión.
@@ -24,29 +26,93 @@ namespace CapaPresentacion
 
         private void FrmVentas_Load(object sender, EventArgs e)
         {
-            // Configuración inicial del comboDocumento (tipo de documento).
+            TemaCapybara.AplicarTema(this);
+            // Configuración inicial del comboDocumento (tipo de comprobante).
+            comboDocumento.Items.Add(new OpcionesCombo() { Valor = "Ticket", Texto = "Ticket" });
             comboDocumento.Items.Add(new OpcionesCombo() { Valor = "Recibo", Texto = "Recibo" });
             comboDocumento.Items.Add(new OpcionesCombo() { Valor = "Factura", Texto = "Factura" });
-
-            // Estilo de comboDocumento (fondo negro y texto blanco).
-            comboDocumento.BackColor = Color.Black;
-            comboDocumento.ForeColor = Color.White;
 
             // Configuración del combo para mostrar el texto y obtener el valor.
             comboDocumento.DisplayMember = "Texto";
             comboDocumento.ValueMember = "Valor";
-            comboDocumento.SelectedIndex = 0; // Selecciona por defecto la primera opción.
+            comboDocumento.SelectedIndex = 0; // Selecciona por defecto Ticket.
+
+            // Configurar Forma de Pago y hacer opcional los campos de cliente
+            ConfigurarFormaPago();
 
             // Asigna la fecha actual al campo de texto txtFecha.
             txtFecha.Texts = DateTime.Now.ToString("dd/MM/yyyy");
 
             // Inicializa el id del producto como "0" (sin producto seleccionado).
             txtIdProd.Text = "0";
+            txtIdCliente.Text = "0";
             txtCupon.Text = "0";
             // Inicializa los campos de pago, cambio y total.
             txtPaga.Texts = "";
             txtCambio.Texts = "";
-            txtTotal.Texts = "0";
+            txtTotal.Texts = "0.00";
+        }
+
+        private void ConfigurarFormaPago()
+        {
+            // En groupBox2 ubicamos Forma de Pago de manera destacada
+            groupBox2.Text = "Forma de Pago y Cliente (Opcional)";
+
+            lblFormaPago = new Label();
+            lblFormaPago.AutoSize = true;
+            lblFormaPago.BackColor = label1.BackColor;
+            lblFormaPago.Font = label1.Font;
+            lblFormaPago.ForeColor = label1.ForeColor;
+            lblFormaPago.Location = new Point(14, 24);
+            lblFormaPago.Name = "lblFormaPago";
+            lblFormaPago.Text = "Forma de Pago:";
+
+            comboFormaPago = new ComboBox();
+            comboFormaPago.Name = "comboFormaPago";
+            comboFormaPago.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboFormaPago.FlatStyle = FlatStyle.Flat;
+            comboFormaPago.Font = comboDocumento.Font;
+            comboFormaPago.BackColor = comboDocumento.BackColor;
+            comboFormaPago.ForeColor = comboDocumento.ForeColor;
+            comboFormaPago.FormattingEnabled = true;
+            comboFormaPago.Location = new Point(14, 43);
+            comboFormaPago.Size = new Size(165, 29);
+
+            comboFormaPago.Items.Add(new OpcionesCombo() { Valor = "Efectivo", Texto = "Efectivo" });
+            comboFormaPago.Items.Add(new OpcionesCombo() { Valor = "Tarjeta de Débito", Texto = "Tarjeta de Débito" });
+            comboFormaPago.Items.Add(new OpcionesCombo() { Valor = "Tarjeta de Crédito", Texto = "Tarjeta de Crédito" });
+            comboFormaPago.Items.Add(new OpcionesCombo() { Valor = "Transferencia", Texto = "Transferencia" });
+            comboFormaPago.DisplayMember = "Texto";
+            comboFormaPago.ValueMember = "Valor";
+            comboFormaPago.SelectedIndex = 0;
+
+            comboFormaPago.SelectedIndexChanged += (s, ev) =>
+            {
+                if (comboFormaPago.SelectedItem is OpcionesCombo fp && fp.Texto != "Efectivo")
+                {
+                    if (decimal.TryParse(txtTotal.Texts, out decimal tot) && tot > 0)
+                    {
+                        txtPaga.Texts = tot.ToString("0.00");
+                        txtCambio.Texts = "0.00";
+                    }
+                }
+            };
+
+            // Reacomodar selección de cliente opcional al lado derecho de groupBox2
+            label2.Visible = false;
+            txtDocumento.Visible = false;
+            label4.Text = "Cliente (Opcional):";
+            label4.Location = new Point(195, 24);
+            txtNombreC.Location = new Point(195, 40);
+            txtNombreC.Size = new Size(105, 36);
+            txtNombreC.PlaceholderText = "Consumidor Final";
+            rjButton2.Location = new Point(304, 38);
+            rjButton2.Size = new Size(42, 38);
+
+            groupBox2.Controls.Add(lblFormaPago);
+            groupBox2.Controls.Add(comboFormaPago);
+            lblFormaPago.BringToFront();
+            comboFormaPago.BringToFront();
         }
 
         private void btnBuscar_Click(object sender, EventArgs e)
@@ -58,13 +124,10 @@ namespace CapaPresentacion
 
                 if (result == DialogResult.OK) // Si se selecciona un cliente, llena los campos de documento y nombre.
                 {
+                    txtIdCliente.Text = modal._Cliente.IdCliente.ToString();
                     txtDocumento.Texts = modal._Cliente.Documento.ToString();
                     txtNombreC.Texts = modal._Cliente.NombreCompleto.ToString();
                     txtCod.Select(); // Mueve el foco al campo de código del producto.
-                }
-                else
-                {
-                    txtDocumento.Select(); // Si no se selecciona cliente, el foco vuelve al campo de documento.
                 }
             }
         }
@@ -86,8 +149,8 @@ namespace CapaPresentacion
 
                     // Configura el control de cantidad mínimo y máximo.
                     txtCantidad.Select();
-                    txtCantidad.Minimum = 1;
-                    txtCantidad.Maximum = modal._Producto.Stock;
+                    txtCantidad.Minimum = modal._Producto.Stock > 0 ? 1 : 0;
+                    txtCantidad.Maximum = modal._Producto.Stock > 0 ? modal._Producto.Stock : 1;
                 }
                 else
                 {
@@ -95,9 +158,6 @@ namespace CapaPresentacion
                 }
             }
         }
-
-  
-            
 
         private void btnAgregar_Click(object sender, EventArgs e)
         {
@@ -155,6 +215,7 @@ namespace CapaPresentacion
                 if (fila.Cells["IdProducto"].Value.ToString() == txtIdProd.Text)
                 {
                     prodExist = true; // Marca que el producto ya está en la lista.
+                    MessageBox.Show("El producto ya está ingresado en la lista de venta.", "Producto ya ingresado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return; // No agrega el producto duplicado.
                 }
             }
@@ -173,12 +234,12 @@ namespace CapaPresentacion
                     // Agrega el producto a la lista (DataGridView).
                     dgvData.Rows.Add(new object[]
                     {
-                txtIdProd.Text,
-                txtProducto.Texts,
-                oProducto.Descripcion,
-                precio.ToString("0.00"),
-                txtCantidad.Value.ToString(),
-                (txtCantidad.Value * precio).ToString("0.00") // Total por producto (cantidad * precio).
+                        txtIdProd.Text,
+                        txtProducto.Texts,
+                        oProducto != null ? oProducto.Descripcion : "",
+                        precio.ToString("0.00"),
+                        txtCantidad.Value.ToString(),
+                        (txtCantidad.Value * precio).ToString("0.00") // Total por producto (cantidad * precio).
                     });
 
                     // Calcula el total de la venta.
@@ -210,8 +271,8 @@ namespace CapaPresentacion
                     txtPrecio.Select(); // Mueve el foco al campo de precio.
 
                     // Establece las cantidades mínimas y máximas basadas en el stock disponible.
-                    txtCantidad.Minimum = 1;
-                    txtCantidad.Maximum = oProducto.Stock;
+                    txtCantidad.Minimum = oProducto.Stock > 0 ? 1 : 0;
+                    txtCantidad.Maximum = oProducto.Stock > 0 ? oProducto.Stock : 1;
                 }
                 else // Si no se encuentra el producto.
                 {
@@ -235,7 +296,6 @@ namespace CapaPresentacion
             txtProducto.Texts = "";
             txtPrecio.Texts = "";
             txtStock.Texts = "";
-        
         }
 
 
@@ -254,33 +314,19 @@ namespace CapaPresentacion
 
             // Muestra el total en el campo txtTotal.
             txtTotal.Texts = total.ToString("0.00");
+
+            // Si la forma de pago no es efectivo, autocompletar Paga Con el total
+            if (comboFormaPago != null && comboFormaPago.SelectedItem is OpcionesCombo fp && fp.Texto != "Efectivo")
+            {
+                txtPaga.Texts = total.ToString("0.00");
+                txtCambio.Texts = "0.00";
+            }
         }
 
 
         private void dgvData_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            if (e.RowIndex < 0) // Evita que se ejecute el código para las cabeceras de columna.
-            {
-                return;
-            }
-
-            // Si la columna es la que contiene el botón para eliminar (índice 6).
-            if (e.ColumnIndex == 6)
-            {
-                e.Paint(e.CellBounds, DataGridViewPaintParts.All); // Pinta el fondo y borde de la celda.
-
-                // Ajusta el tamaño de la imagen a ser dibujada.
-                var w = Properties.Resources.borrar_1_.Width - 8;
-                var h = Properties.Resources.borrar_1_.Height - 8;
-
-                // Calcula la posición de la imagen dentro de la celda.
-                var x = e.CellBounds.Left + (e.CellBounds.Width - w) / 2;
-                var y = e.CellBounds.Top + (e.CellBounds.Height - h) / 2;
-
-                // Dibuja la imagen en la celda.
-                e.Graphics.DrawImage(Properties.Resources.borrar_1_, new Rectangle(x, y, w, h));
-                e.Handled = true; // Indica que el evento ha sido manejado para evitar el dibujo por defecto.
-            }
+            TemaCapybara.ModernDgv_CellPainting(sender, e);
         }
 
 
@@ -323,7 +369,7 @@ namespace CapaPresentacion
             {
                 e.Handled = false;
             }
-            else if (e.KeyChar == ',' && (txtPrecio.Texts.Trim().Length > 0 && longitudPermitida) )
+            else if (e.KeyChar == ',' && (txtPrecio.Texts.Trim().Length > 0 && longitudPermitida))
             {
                 // Permitir una coma decimal solo si no existe ya una en el Textso
                 if (txtPrecio.Texts.Contains(","))
@@ -361,10 +407,10 @@ namespace CapaPresentacion
             {
                 e.Handled = false;
             }
-            else if (e.KeyChar == ',' && txtPrecio.Texts.Trim().Length > 0)
+            else if (e.KeyChar == ',' && txtPaga.Texts.Trim().Length > 0)
             {
-                // Permitir una coma decimal solo si no existe ya una en el Textso
-                if (txtPrecio.Texts.Contains(","))
+                // Permitir una coma decimal solo si no existe ya una en el texto
+                if (txtPaga.Texts.Contains(","))
                 {
                     e.Handled = true;
                 }
@@ -393,7 +439,7 @@ namespace CapaPresentacion
 
             if (txtPaga.Texts.Trim() == "") // Si el campo de pago está vacío.
             {
-                txtPaga.Texts = "0"; // Asigna un valor de 0 para evitar errores de conversión.
+                txtPaga.Texts = total.ToString("0.00"); // Asigna el total por defecto.
             }
 
             if (decimal.TryParse(txtPaga.Texts.Trim(), out pagacon)) // Intenta convertir el texto a decimal.
@@ -422,26 +468,25 @@ namespace CapaPresentacion
 
         private bool validaciones()
         {
-            bool bandera = true; // Variable bandera para validar el estado.
-
-            if (txtDocumento.Texts == "") // Verifica si el campo de documento está vacío.
-            {
-                bandera = false; // Si está vacío, marca la bandera como falsa.
-            }
-            if (txtNombreC.Texts == "") // Verifica si el campo de nombre está vacío.
-            {
-                bandera = false;
-            }
             if (dgvData.Rows.Count < 1) // Verifica si hay productos en el DataGridView.
             {
-                bandera = false;
-            }
-            if (txtPaga.Texts == "" || txtPaga.Texts == "0.00") // Verifica si el campo de pago está vacío o es 0.00.
-            {
-                bandera = false;
+                MessageBox.Show("Debe ingresar productos a la venta.", "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
             }
 
-            return bandera; // Devuelve verdadero si todos los campos son válidos, falso si falta algo.
+            decimal total = Convert.ToDecimal(txtTotal.Texts);
+            if (string.IsNullOrWhiteSpace(txtPaga.Texts))
+            {
+                txtPaga.Texts = total.ToString("0.00");
+            }
+
+            if (!decimal.TryParse(txtPaga.Texts, out decimal pagaCon) || pagaCon < total)
+            {
+                MessageBox.Show("El monto de pago no puede ser menor al total de la venta.", "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            return true;
         }
 
 
@@ -449,18 +494,11 @@ namespace CapaPresentacion
         {
             if (validaciones()) // Primero verifica si todas las validaciones pasan.
             {
-
-
-
                 // Pide confirmación antes de registrar la venta.
                 DialogResult confirmacion = MessageBox.Show("¿Seguro que desea registrar la venta?", "Confirmacion", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 if (confirmacion == DialogResult.Yes) // Si el usuario confirma que quiere registrar la venta.
                 {
-
-
-                
-
                     // Crea un DataTable para los detalles de la venta.
                     DataTable detalle_Venta = new DataTable();
                     detalle_Venta.Columns.Add("IdProducto", typeof(int));
@@ -474,10 +512,10 @@ namespace CapaPresentacion
                         detalle_Venta.Rows.Add(
                             new Object[]
                             {
-                        Convert.ToInt32(row.Cells["IdProducto"].Value.ToString()),
-                        Convert.ToDecimal(row.Cells["Precio"].Value.ToString()),
-                        Convert.ToInt32(row.Cells["Cantidad"].Value.ToString()),
-                        Convert.ToDecimal(row.Cells["SubTotal"].Value.ToString())
+                                Convert.ToInt32(row.Cells["IdProducto"].Value.ToString()),
+                                Convert.ToDecimal(row.Cells["Precio"].Value.ToString()),
+                                Convert.ToInt32(row.Cells["Cantidad"].Value.ToString()),
+                                Convert.ToDecimal(row.Cells["SubTotal"].Value.ToString())
                             }
                         );
                     }
@@ -489,20 +527,37 @@ namespace CapaPresentacion
                     // Calcula el cambio antes de registrar la venta.
                     calcularCambio();
 
+                    int idCliente = 0;
+                    int.TryParse(txtIdCliente.Text, out idCliente);
+                    if (idCliente == 0 && !string.IsNullOrWhiteSpace(txtDocumento.Texts))
+                    {
+                        var clienteEncontrado = new CN_Cliente().Listar().FirstOrDefault(c => c.Documento == txtDocumento.Texts.Trim() && c.Estado);
+                        if (clienteEncontrado != null)
+                        {
+                            idCliente = clienteEncontrado.IdCliente;
+                            txtIdCliente.Text = idCliente.ToString();
+                        }
+                    }
+
+                    string formaPagoSeleccionada = comboFormaPago != null && comboFormaPago.SelectedItem is OpcionesCombo fp
+                        ? fp.Texto
+                        : "Efectivo";
+
                     // Crea una instancia de la clase Venta y asigna los datos.
                     Venta oVenta = new Venta()
                     {
-                        oUsuario = new Usuario() { IdUsuario = usuarioActual.IdUsuario },
+                        oUsuario = new Usuario() { IdUsuario = usuarioActual != null ? usuarioActual.IdUsuario : 1 },
+                        oCliente = new Cliente() { IdCliente = idCliente },
                         TipoDocumento = ((OpcionesCombo)comboDocumento.SelectedItem).Texto,
+                        FormaPago = formaPagoSeleccionada,
                         NumeroDocumento = numeroDocumento,
                         DocumentoCliente = txtDocumento.Texts,
-                        NombreCliente = txtNombreC.Texts,
+                        NombreCliente = string.IsNullOrWhiteSpace(txtNombreC.Texts) ? "Consumidor Final" : txtNombreC.Texts,
                         IdCupon = Convert.ToInt32(txtCupon.Text),
                         MontoPago = Convert.ToDecimal(txtPaga.Texts),
                         MontoCambio = Convert.ToDecimal(txtCambio.Texts),
                         MontoTotal = Convert.ToDecimal(txtTotal.Texts)
                     };
-                    
 
                     // Llama al método para registrar la venta en la base de datos.
                     string Mensaje = string.Empty;
@@ -510,23 +565,11 @@ namespace CapaPresentacion
 
                     if (respuesta) // Si la venta se registró correctamente.
                     {
-                        // Muestra un mensaje con el número de venta generado y ofrece copiarlo al portapapeles.
-                        var result = MessageBox.Show("Numero de Venta generada:\n" + numeroDocumento + "\n\n¿Desea ver el detalle de venta?", "Mensaje", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-                        if (result == DialogResult.Yes)
-                        {
-                            Clipboard.SetText(numeroDocumento); // Copia el número de venta al portapapeles.
-                            inicio.inicio(new FrmDetalleVenta(numeroDocumento, inicio));
-                            txtDocumento.Texts = "";
-                            txtNombreC.Texts = "";
-                            dgvData.Rows.Clear();
-                            calcularTotal();
-                            txtCupon.Text = "0";
-                            txtPaga.Texts = "";
-                            txtCambio.Texts = "";
-                            this.Close();
-                        }
+                        // Muestra un mensaje indicando que la venta ya fue ingresada y ofrece emitir el Ticket Comprobante de Venta.
+                        var result = MessageBox.Show("¡La venta ya fue ingresada exitosamente!\n\nNúmero de Venta generada: " + numeroDocumento + "\nForma de Pago: " + formaPagoSeleccionada + "\n\n¿Desea ver y descargar el Ticket Comprobante de Venta?", "Venta Registrada", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
 
                         // Limpia los campos después de registrar la venta.
+                        txtIdCliente.Text = "0";
                         txtDocumento.Texts = "";
                         txtNombreC.Texts = "";
                         dgvData.Rows.Clear();
@@ -534,17 +577,18 @@ namespace CapaPresentacion
                         txtCupon.Text = "0";
                         txtPaga.Texts = "";
                         txtCambio.Texts = "";
+
+                        if (result == DialogResult.Yes)
+                        {
+                            Clipboard.SetText(numeroDocumento); // Copia el número de venta al portapapeles.
+                            inicio.inicio(new FrmDetalleVenta(numeroDocumento, inicio));
+                        }
                     }
                     else
                     {
                         MessageBox.Show(Mensaje, "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Exclamation); // Muestra un mensaje de error si la venta no se registró.
                     }
                 }
-            }
-            else
-            {
-                // Si alguna validación falla, muestra un mensaje de error.
-                MessageBox.Show("No se pudo registrar la compra", "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 

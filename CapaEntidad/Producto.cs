@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace CapaEntidad
 {
@@ -16,5 +16,6 @@ namespace CapaEntidad
         public decimal PrecioVenta { get; set; }
         public bool Estado { get; set; }
         public String FechaRegistro { get; set; }
+        public Proveedor oProveedor { get; set; }
     }
 }

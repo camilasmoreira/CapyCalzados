@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -82,11 +82,12 @@ namespace CapaDatos
                             {
                                 FechaRegistro = dr["FechaRegistro"].ToString(),
                                 TipoDocumento = dr["TipoDocumento"].ToString(),
+                                FormaPago = HasColumn(dr, "FormaPago") ? dr["FormaPago"].ToString() : "Efectivo",
                                 NumeroDocumento = dr["NumeroDocumento"].ToString(),
                                 MontoTotal = dr["MontoTotal"].ToString(),
                                 UsuarioRegistro = dr["UsuarioRegistro"].ToString(),
-                                DocumentoCliente = dr["DocumentoCliente"].ToString(),
-                                NombreCliente = dr["NombreCliente"].ToString(),
+                                DocumentoCliente = HasColumn(dr, "DocumentoCliente") ? dr["DocumentoCliente"].ToString() : "",
+                                NombreCliente = HasColumn(dr, "NombreCliente") ? dr["NombreCliente"].ToString() : "",
                                 CodigoProducto = dr["CodigoProducto"].ToString(),
                                 NombreProducto = dr["NombreProducto"].ToString(),
                                 Categoria = dr["Categoria"].ToString(),
@@ -104,6 +105,16 @@ namespace CapaDatos
                 }
             }
             return lista;
+        }
+
+        private bool HasColumn(IDataRecord dr, string columnName)
+        {
+            for (int i = 0; i < dr.FieldCount; i++)
+            {
+                if (dr.GetName(i).Equals(columnName, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
     }

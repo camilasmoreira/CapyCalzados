@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Utilidades;
 using System;
@@ -29,6 +29,7 @@ namespace CapaPresentacion.Modales
 
         private void mdProducto_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
             foreach (DataGridViewColumn columna in dgvData.Columns)
             {
                 if (columna.Visible == true)

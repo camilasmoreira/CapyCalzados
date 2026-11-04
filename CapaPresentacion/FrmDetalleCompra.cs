@@ -1,6 +1,6 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
-
+using CapaPresentacion.Utilidades;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 using iTextSharp.tool.xml;
@@ -198,6 +198,7 @@ namespace CapaPresentacion
         // Evento que se ejecuta al cargar el formulario, seleccionando el campo de búsqueda
         private void FrmDetalleCompra_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
             txtBusqueda.Select();
         }
 

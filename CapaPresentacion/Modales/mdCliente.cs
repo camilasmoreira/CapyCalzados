@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Utilidades;
 using System;
@@ -26,6 +26,7 @@ namespace CapaPresentacion.Modales
 
         private void mdCliente_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
             foreach (DataGridViewColumn columna in dgvData.Columns)
             {
                 if (columna.Visible == true)
@@ -46,6 +47,7 @@ namespace CapaPresentacion.Modales
                 if (item.Estado)
                 {
                     dgvData.Rows.Add(new object[] {
+                        item.IdCliente,
                         item.Documento,
                         item.NombreCompleto,
                         item.Correo
@@ -69,10 +71,11 @@ namespace CapaPresentacion.Modales
             int iRow = e.RowIndex;
             int iColumn = e.ColumnIndex;
 
-            if (iRow >= 0 && iColumn > 0)
+            if (iRow >= 0 && iColumn >= 0)
             {
                 _Cliente = new Cliente()
                 {
+                    IdCliente = Convert.ToInt32(dgvData.Rows[iRow].Cells["IdCliente"].Value.ToString()),
                     Documento = dgvData.Rows[iRow].Cells["Documento"].Value.ToString(),
                     NombreCompleto = dgvData.Rows[iRow].Cells["NombreCompleto"].Value.ToString(),
                     Correo = dgvData.Rows[iRow].Cells["Correo"].Value.ToString()

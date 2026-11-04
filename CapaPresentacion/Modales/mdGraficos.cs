@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using System;
 using System.Collections.Generic;
@@ -32,6 +32,7 @@ namespace CapaPresentacion.Modales
 
         private void mdGraficos_Load(object sender, EventArgs e)
         {
+            CapaPresentacion.Utilidades.TemaCapybara.AplicarTema(this);
             // Agregar puntos a las series
             ctVentas.Series[0].Points.AddY(0);
             ctCompras.Series[0].Points.AddY(0);

@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Utilidades;
 using ClosedXML.Excel;
@@ -22,6 +22,7 @@ namespace CapaPresentacion
         // Método que se ejecuta al cargar el formulario
         private void FrmReporteCompra_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
             // Mostrar Proveedores en el combo
             List<Proveedor> listaProveedores = new CN_Proveedor().Listar();
 
@@ -283,25 +284,7 @@ namespace CapaPresentacion
 
         private void dgvData_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            // Evita la ejecución para el encabezado del DataGridView.
-            if (e.RowIndex < 0)
-            {
-                return;
-            }
-            // Verifica si la columna es la de selección.
-            if (e.ColumnIndex == 14)
-            {
-                e.Paint(e.CellBounds, DataGridViewPaintParts.All); // Dibuja la celda.
-                var w = Properties.Resources.comprobado.Width - 15; // Ancho del icono.
-                var h = Properties.Resources.comprobado.Height - 15; // Alto del icono.
-
-                // Calcula la posición para centrar el icono.
-                var x = e.CellBounds.Left + (e.CellBounds.Width - w) / 2;
-                var y = e.CellBounds.Top + (e.CellBounds.Height - h) / 2;
-
-                e.Graphics.DrawImage(Properties.Resources.comprobado, new Rectangle(x, y, w, h)); // Dibuja el icono.
-                e.Handled = true; // Marca la celda como manejada.
-            }
+            TemaCapybara.ModernDgv_CellPainting(sender, e);
         }
     }
 }

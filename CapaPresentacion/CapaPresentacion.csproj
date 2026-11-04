@@ -333,6 +333,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilidades\OpcionesCombo.cs" />
+    <Compile Include="Utilidades\TemaCapybara.cs" />
     <EmbeddedResource Include="Custom\RJTextBox.resx" />
     <EmbeddedResource Include="FrmCategoria.resx">
       <DependentUpon>FrmCategoria.cs</DependentUpon>
@@ -619,6 +620,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\horario-de-busqueda %281%29.png" />
+    <None Include="Resources\tienda_zapatos.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

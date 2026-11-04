@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Utilidades;
 using System;
@@ -10,12 +10,16 @@ namespace CapaPresentacion
 {
     public partial class FrmClientes : Form
     {
-        public FrmClientes()
+        private Usuario usuarioActual;
+
+        public FrmClientes(Usuario oUsuario = null)
         {
             InitializeComponent();
+            usuarioActual = oUsuario;
         }
         private void FrmClientes_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
             // Inicializa el comboEstado con opciones para el estado del cliente (Activo, No Activo).
             comboEstado.Items.Add(new OpcionesCombo() { Valor = 1, Texto = "Activo" });
             comboEstado.Items.Add(new OpcionesCombo() { Valor = 0, Texto = "No Activo" });
@@ -53,6 +57,13 @@ namespace CapaPresentacion
             item.Estado == true ? 1 : 0, // Estado como valor
             item.Estado == true ? "Activo" : "No Activo" // Estado como texto
         });
+            }
+
+            // Si es vendedor (rol != 1), no puede eliminar clientes
+            if (usuarioActual != null && usuarioActual.oRol != null && usuarioActual.oRol.IdRol != 1)
+            {
+                BtnEliminar2.Enabled = false;
+                BtnEliminar2.Visible = false;
             }
         }
 
@@ -191,6 +202,12 @@ namespace CapaPresentacion
 
         private void btnEliminar_Click(object sender, EventArgs e)
         {
+            if (usuarioActual != null && usuarioActual.oRol != null && usuarioActual.oRol.IdRol != 1)
+            {
+                MessageBox.Show("El vendedor no tiene permisos para eliminar clientes.", "Permiso denegado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             // Verifica si se ha seleccionado un cliente para eliminar.
             if (Convert.ToInt32(txtid.Text) != 0)
             {
@@ -291,25 +308,7 @@ namespace CapaPresentacion
 
         private void dgvData_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            // Evita la ejecución para el encabezado del DataGridView.
-            if (e.RowIndex < 0)
-            {
-                return;
-            }
-            // Verifica si la columna es la de selección.
-            if (e.ColumnIndex == 0)
-            {
-                e.Paint(e.CellBounds, DataGridViewPaintParts.All); // Dibuja la celda.
-                var w = Properties.Resources.comprobado.Width - 15; // Ancho del icono.
-                var h = Properties.Resources.comprobado.Height - 15; // Alto del icono.
-
-                // Calcula la posición para centrar el icono.
-                var x = e.CellBounds.Left + (e.CellBounds.Width - w) / 2;
-                var y = e.CellBounds.Top + (e.CellBounds.Height - h) / 2;
-
-                e.Graphics.DrawImage(Properties.Resources.comprobado, new Rectangle(x, y, w, h)); // Dibuja el icono.
-                e.Handled = true; // Marca la celda como manejada.
-            }
+            TemaCapybara.ModernDgv_CellPainting(sender, e);
         }
 
         private void LimpiarCampos()
@@ -464,4 +463,3 @@ namespace CapaPresentacion
     }
 
 }
-

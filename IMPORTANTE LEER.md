@@ -1,5 +1,5 @@
-# GK-Innovatech
-Sistema de Gestion de Ventas de Articulos Electronicos
+# CapyCalzados
+Sistema de Gestión de Ventas de Calzados
 
 
 # Base de datos
@@ -14,4 +14,4 @@ Tipos de perfiles: Gerente, Manager, Vendedor
 
 
 
-Desarrollado por Garay, Kevin Emiliano & Ghio, Giovanni Jose
+CapyCalzados - Sistema Integral de Gestión

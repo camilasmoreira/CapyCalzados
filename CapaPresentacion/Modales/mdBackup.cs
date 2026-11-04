@@ -1,4 +1,4 @@
-﻿using CapaNegocio;
+using CapaNegocio;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,7 +26,7 @@ namespace CapaPresentacion.Modales
 
         private void mdBackup_Load(object sender, EventArgs e)
         {
-
+            CapaPresentacion.Utilidades.TemaCapybara.AplicarTema(this);
         }
 
         private void button2_Click(object sender, EventArgs e)

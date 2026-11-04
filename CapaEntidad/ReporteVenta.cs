@@ -1,9 +1,10 @@
-﻿namespace CapaEntidad
+namespace CapaEntidad
 {
     public class ReporteVenta
     {
         public string FechaRegistro { get; set; }
         public string TipoDocumento { get; set; }
+        public string FormaPago { get; set; }
         public string NumeroDocumento { get; set; }
         public string MontoTotal { get; set; }
         public string UsuarioRegistro { get; set; }

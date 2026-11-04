@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -113,10 +113,10 @@ namespace CapaDatos
 
                     SqlCommand cmd = new SqlCommand("SP_REGISTRARVENTA", oconexion);
                     cmd.Parameters.AddWithValue("IdUsuario", obj.oUsuario.IdUsuario);
+                    cmd.Parameters.AddWithValue("IdCliente", (obj.oCliente != null && obj.oCliente.IdCliente > 0) ? (object)obj.oCliente.IdCliente : DBNull.Value);
                     cmd.Parameters.AddWithValue("TipoDocumento", obj.TipoDocumento);
                     cmd.Parameters.AddWithValue("NumeroDocumento", obj.NumeroDocumento);
-                    cmd.Parameters.AddWithValue("DocumentoCliente", obj.DocumentoCliente);
-                    cmd.Parameters.AddWithValue("NombreCliente", obj.NombreCliente);
+                    cmd.Parameters.AddWithValue("FormaPago", string.IsNullOrWhiteSpace(obj.FormaPago) ? "Efectivo" : obj.FormaPago);
                     cmd.Parameters.AddWithValue("MontoPago", obj.MontoPago);
                     cmd.Parameters.AddWithValue("MontoCambio", obj.MontoCambio);
                     cmd.Parameters.AddWithValue("MontoTotal", obj.MontoTotal);
@@ -155,12 +155,13 @@ namespace CapaDatos
 
 
                     query.AppendLine("select v.IdVenta,u.NombreCompleto,u.Documento,");
-                    query.AppendLine("v.DocumentoCliente,v.NombreCliente,");
-                    query.AppendLine("v.TipoDocumento,v.NumeroDocumento,");
+                    query.AppendLine("v.IdCliente,ISNULL(c.Documento, '') AS DocumentoCliente,ISNULL(c.NombreCompleto, 'Consumidor Final') AS NombreCliente,");
+                    query.AppendLine("v.TipoDocumento,ISNULL(v.FormaPago, 'Efectivo') AS FormaPago,v.NumeroDocumento,");
                     query.AppendLine("v.MontoPago,v.MontoCambio,v.MontoTotal,");
                     query.AppendLine("convert(char(10), v.FechaRegistro, 103)[FechaRegistro]");
                     query.AppendLine("from Venta v");
                     query.AppendLine("inner join Usuario u on u.IdUsuario = v.IdUsuario");
+                    query.AppendLine("left join Cliente c on c.IdCliente = v.IdCliente");
                     query.AppendLine("where v.NumeroDocumento = @numero");
                     SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
                     cmd.Parameters.AddWithValue("@numero", numero);
@@ -174,9 +175,15 @@ namespace CapaDatos
                             {
                                 IdVenta = Convert.ToInt32(dr["IdVenta"]),
                                 oUsuario = new Usuario { NombreCompleto = dr["NombreCompleto"].ToString(), Documento = dr["Documento"].ToString() },
+                                oCliente = new Cliente {
+                                    IdCliente = dr["IdCliente"] != DBNull.Value ? Convert.ToInt32(dr["IdCliente"]) : 0,
+                                    Documento = dr["DocumentoCliente"].ToString(),
+                                    NombreCompleto = dr["NombreCliente"].ToString()
+                                },
                                 DocumentoCliente = dr["DocumentoCliente"].ToString(),
                                 NombreCliente = dr["NombreCliente"].ToString(),
                                 TipoDocumento = dr["TipoDocumento"].ToString(),
+                                FormaPago = dr["FormaPago"].ToString(),
                                 NumeroDocumento = dr["NumeroDocumento"].ToString(),
                                 MontoPago = Convert.ToDecimal(dr["MontoPago"].ToString()),
                                 MontoCambio = Convert.ToDecimal(dr["MontoCambio"].ToString()),

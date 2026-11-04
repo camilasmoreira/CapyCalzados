@@ -1,6 +1,7 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Modales;
+using CapaPresentacion.Utilidades;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,6 +27,7 @@ namespace CapaPresentacion
         // Evento que se ejecuta cuando se carga el formulario
         private void FrmGraficos_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
             // Listas para almacenar los datos de categorías y productos desde la capa de negocio
             ArrayList Categorias = new ArrayList();
             ArrayList Productos = new ArrayList();
@@ -65,9 +67,12 @@ namespace CapaPresentacion
             // Obtener datos de ventas y compras desde la capa de negocio
             Grafico obj = new CN_Grafico().Datos();
 
-            // Mostrar el total de ventas y compras en los respectivos labels
-            Ventas.Text = Ventas.Text + "  $" + obj.totalVentas.ToString();
-            Compras.Text = Compras.Text + "  $" + obj.Compras.ToString();
+            // Mostrar el total de ventas y compras en los respectivos botones de resumen
+            Ventas.Text = "Total Ventas:  $" + obj.totalVentas.ToString();
+            Compras.Text = "Total Compras:  $" + obj.Compras.ToString();
+
+            // Aplicar tema después de poblar las series para colorear los gráficos con la paleta Capybara
+            TemaCapybara.AplicarTema(this);
         }
 
         // Evento que abre un formulario modal al hacer clic en el botón

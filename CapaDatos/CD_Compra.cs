@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -87,7 +87,7 @@ namespace CapaDatos
                     StringBuilder query = new StringBuilder();
                     query.AppendLine("select c.IdCompra,");
                     query.AppendLine("u.NombreCompleto,u.Documento,");
-                    query.AppendLine("pr.Documento,pr.RazonSocial,pr.Correo,");
+                    query.AppendLine("pr.Documento[DocumentoProveedor],pr.RazonSocial,pr.Correo,");
                     query.AppendLine("c.TipoDocumento,c.Estado,c.NumeroDocumento,c.MontoTotal,convert(char(10), c.FechaRegistro, 103)[FechaRegistro]");
                     query.AppendLine("from Compra c");
                     query.AppendLine("inner join Usuario u on u.IdUsuario = c.IdUsuario");
@@ -106,7 +106,7 @@ namespace CapaDatos
                             {
                                 IdCompra = Convert.ToInt32(dr["IdCompra"]),
                                 oUsuario = new Usuario { NombreCompleto = dr["NombreCompleto"].ToString(), Documento = dr["Documento"].ToString() },
-                                oProveedor = new Proveedor { Documento = dr["Documento"].ToString(), RazonSocial = dr["RazonSocial"].ToString(), Correo = dr["Correo"].ToString() },
+                                oProveedor = new Proveedor { Documento = dr["DocumentoProveedor"].ToString(), RazonSocial = dr["RazonSocial"].ToString(), Correo = dr["Correo"].ToString() },
                                 TipoDocumento = dr["TipoDocumento"].ToString(),
                                 NumeroDocumento = dr["NumeroDocumento"].ToString(),
                                 MontoTotal = Convert.ToDecimal(dr["MontoTotal"].ToString()),

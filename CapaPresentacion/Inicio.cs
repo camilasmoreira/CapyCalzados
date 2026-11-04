@@ -1,6 +1,7 @@
 using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Modales;
+using CapaPresentacion.Utilidades;
 using CustomControls.RJControls;
 using FontAwesome.Sharp;
 using System;
@@ -24,88 +25,70 @@ namespace CapaPresentacion
         {
             user = objusuario; // Asigna el usuario recibido.
             InitializeComponent(); // Inicializa los componentes visuales del formulario.
+            menuLateral.Renderer = new TemaCapybara.CapybaraRenderer();
+            menuTitulo.Renderer = new TemaCapybara.CapybaraRenderer();
             inicio(new FrmInicio()); // Abre el formulario de inicio por defecto.
-            menuLateral.Renderer = new MiRenderizador();
-            menuTitulo.Renderer = new MiRenderizador();
             lblIndicador.Text = "Inicio";
             lblRol.Text += " " + user.oRol.Descripcion; // Muestra el rol del usuario en la etiqueta.
         }
 
-        private class MiRenderizador : ToolStripProfessionalRenderer
-        {
-            protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
-            {
-                if (!e.Item.Selected) base.OnRenderMenuItemBackground(e);
-                else
-                {
-                    Rectangle rc = new Rectangle(Point.Empty, e.Item.Size);      
-                    e.Graphics.FillRectangle(Brushes.Gray, rc); //Elige el color que desees
-                    e.Graphics.DrawRectangle(Pens.Black, 1, 0, rc.Width - 2, rc.Height - 1);
-               
-                }
-            }
-        }
-
-
-
         public void pintar()
         {
-            this.menuMantenimiento.BackColor = Color.FromArgb(38, 50, 56);
-            this.menuCompras.BackColor = Color.FromArgb(38, 50, 56);
-            this.menuVentas.BackColor = Color.FromArgb(38, 50, 56);
+            this.menuMantenimiento.BackColor = TemaCapybara.FondoLateral;
+            this.menuMantenimiento.ForeColor = TemaCapybara.MenuTexto;
+            this.menuMantenimiento.IconColor = TemaCapybara.MenuIcono;
+
+            this.menuCompras.BackColor = TemaCapybara.FondoLateral;
+            this.menuCompras.ForeColor = TemaCapybara.MenuTexto;
+            this.menuCompras.IconColor = TemaCapybara.MenuIcono;
+
+            this.menuVentas.BackColor = TemaCapybara.FondoLateral;
+            this.menuVentas.ForeColor = TemaCapybara.MenuTexto;
+            this.menuVentas.IconColor = TemaCapybara.MenuIcono;
+
             // Definimos conjuntos de tipos de formularios para cada menú
             var mantenimientoForms = new HashSet<Type>
-    {
-        typeof(FrmCategoria),
-        typeof(FrmNegocio),
-        typeof(FrmProducto)
-    };
+            {
+                typeof(FrmCategoria),
+                typeof(FrmNegocio),
+                typeof(FrmProducto)
+            };
 
             var comprasForms = new HashSet<Type>
-    {
-        typeof(FrmDetalleCompra),
-        typeof(FrmCompras)
-    };
+            {
+                typeof(FrmDetalleCompra),
+                typeof(FrmCompras)
+            };
 
             var ventasForms = new HashSet<Type>
-    {
-        typeof(FrmDetalleVenta),
-        typeof(FrmVentas)
-    };
-
-            // Inicializamos el color de fondo por defecto
-            Color defaultColor = Color.FromArgb(38, 50, 56);
-            Color selectedColor = Color.FromArgb(30, 30, 30);
-
-            // Variable para determinar si encontramos un formulario específico
-            bool found = false;
+            {
+                typeof(FrmDetalleVenta),
+                typeof(FrmVentas)
+            };
 
             foreach (Form form in Contenedor.Controls.OfType<Form>())
             {
                 if (mantenimientoForms.Contains(form.GetType()))
                 {
-                    this.menuMantenimiento.BackColor = selectedColor;
-                    found = true;
-                    break; // Salimos del bucle si encontramos un formulario de mantenimiento
+                    this.menuMantenimiento.BackColor = TemaCapybara.MenuSeleccionado;
+                    this.menuMantenimiento.ForeColor = Color.White;
+                    this.menuMantenimiento.IconColor = TemaCapybara.BotonYuzu;
+                    break;
                 }
                 else if (comprasForms.Contains(form.GetType()))
                 {
-                    this.menuCompras.BackColor = selectedColor;
-                    found = true;
-                    break; // Salimos del bucle si encontramos un formulario de compras
+                    this.menuCompras.BackColor = TemaCapybara.MenuSeleccionado;
+                    this.menuCompras.ForeColor = Color.White;
+                    this.menuCompras.IconColor = TemaCapybara.BotonYuzu;
+                    break;
                 }
                 else if (ventasForms.Contains(form.GetType()))
                 {
-                    this.menuVentas.BackColor = selectedColor;
-                    found = true;
-                    break; // Salimos del bucle si encontramos un formulario de ventas
+                    this.menuVentas.BackColor = TemaCapybara.MenuSeleccionado;
+                    this.menuVentas.ForeColor = Color.White;
+                    this.menuVentas.IconColor = TemaCapybara.BotonYuzu;
+                    break;
                 }
-            }
-
-            // Si no se encontró ningún formulario, aplicamos el color por defecto
-            if (!found)
-            {
-                this.menuMantenimiento.BackColor = defaultColor;
             }
         }
 
@@ -114,56 +97,59 @@ namespace CapaPresentacion
         public void inicio(Form formulario)
         {
             Contenedor.Controls.Clear();
-            // Restablece el color del menú activo si existe.
             if (menuActivo != null)
             {
-                menuActivo.BackColor = Color.FromArgb(38, 50, 56); // Color por defecto.
+                menuActivo.BackColor = TemaCapybara.FondoLateral;
+                menuActivo.ForeColor = TemaCapybara.MenuTexto;
+                menuActivo.IconColor = TemaCapybara.MenuIcono;
             }
 
-            // Cierra el formulario activo si ya hay uno abierto.
             if (formActivo != null)
             {
                 formActivo.Close();
             }
 
-            formActivo = formulario; // Asigna el nuevo formulario como activo.
-            formulario.TopLevel = false; // Configura el formulario para que no sea de nivel superior.
-            formulario.FormBorderStyle = FormBorderStyle.None; // Elimina los bordes del formulario.
-            formulario.Dock = DockStyle.Fill; // Establece el formulario para que ocupe todo el contenedor.
-            formulario.BackColor = Color.FromArgb(44, 53, 68); // Cambia el color de fondo.
-            Contenedor.Controls.Add(formulario); // Añade el formulario al contenedor visual.
+            formActivo = formulario;
+            formulario.TopLevel = false;
+            formulario.FormBorderStyle = FormBorderStyle.None;
+            formulario.Dock = DockStyle.Fill;
+            formulario.BackColor = TemaCapybara.FondoFormulario;
+            TemaCapybara.AplicarTema(formulario);
+            Contenedor.Controls.Add(formulario);
             pintar();
-            formulario.Show(); // Muestra el formulario.
+            formulario.Show();
         }
 
         // Método para abrir un formulario y cambiar el menú activo.
         public void abrirFormulario(IconMenuItem menu, Form formulario)
         {
-              Contenedor.Controls.Clear();
-            // Restablece el color del menú activo si existe.
+            Contenedor.Controls.Clear();
             if (menuActivo != null)
             {
-                menuActivo.BackColor = Color.FromArgb(38, 50, 56);
+                menuActivo.BackColor = TemaCapybara.FondoLateral;
+                menuActivo.ForeColor = TemaCapybara.MenuTexto;
+                menuActivo.IconColor = TemaCapybara.MenuIcono;
             }
 
-            // Cambia el color del menú seleccionado.
-            menu.BackColor = Color.FromArgb(30, 30, 30);
-            menuActivo = menu; // Asigna el nuevo menú como activo.
+            menu.BackColor = TemaCapybara.MenuSeleccionado;
+            menu.ForeColor = Color.White;
+            menu.IconColor = TemaCapybara.BotonYuzu;
+            menuActivo = menu;
 
-            // Cierra el formulario activo si ya hay uno abierto.
             if (formActivo != null)
             {
                 formActivo.Close();
             }
 
-            formActivo = formulario; // Asigna el nuevo formulario como activo.
-            formulario.TopLevel = false; // Configura el formulario para que no sea de nivel superior.
-            formulario.FormBorderStyle = FormBorderStyle.None; // Elimina los bordes del formulario.
-            formulario.Dock = DockStyle.Fill; // Establece el formulario para que ocupe todo el contenedor.
-            formulario.BackColor = Color.FromArgb(44, 53, 68); // Cambia el color de fondo.
-            Contenedor.Controls.Add(formulario); // Añade el formulario al contenedor visual.
+            formActivo = formulario;
+            formulario.TopLevel = false;
+            formulario.FormBorderStyle = FormBorderStyle.None;
+            formulario.Dock = DockStyle.Fill;
+            formulario.BackColor = TemaCapybara.FondoFormulario;
+            TemaCapybara.AplicarTema(formulario);
+            Contenedor.Controls.Add(formulario);
             pintar();
-            formulario.Show(); // Muestra el formulario.
+            formulario.Show();
         }
 
 
@@ -194,21 +180,64 @@ namespace CapaPresentacion
 
       
             DateTime fecha = DateTime.Now;
-
-            bool resultado = new CN_Backup().Backup(fecha);
-            if(resultado == true)
+            try
             {
-                MessageBox.Show("Se esta realizando una copia de seguridad automatica, aguarde","Aviso",MessageBoxButtons.OK,MessageBoxIcon.Stop);
+                new CN_Backup().Backup(fecha);
             }
+            catch { }
 
             // Muestra el nombre completo del usuario en el formulario.
             nombreUser.Text = user.NombreCompleto;
+
+            // Aplicar Estilo Capybara al contenedor y menús
+            panelLateral.BackColor = TemaCapybara.FondoLateral;
+            menuLateral.BackColor = TemaCapybara.FondoLateral;
+            BarraTop.BackColor = TemaCapybara.FondoBarraTop;
+            nombreUser.BackColor = TemaCapybara.FondoBarraTop;
+            nombreUser.ForeColor = TemaCapybara.TextoPrincipal;
+            lblIndicador.ForeColor = TemaCapybara.TextoPrincipal;
+            lblRol.ForeColor = TemaCapybara.TextoDorado;
+            Contenedor.BackColor = TemaCapybara.FondoFormulario;
+
+            foreach (IconMenuItem iconmenu in menuLateral.Items)
+            {
+                iconmenu.BackColor = TemaCapybara.FondoLateral;
+                iconmenu.ForeColor = TemaCapybara.MenuTexto;
+                iconmenu.IconColor = TemaCapybara.MenuIcono;
+                foreach (ToolStripItem subItem in iconmenu.DropDownItems)
+                {
+                    subItem.BackColor = TemaCapybara.FondoLateral;
+                    subItem.ForeColor = TemaCapybara.MenuTexto;
+                    subItem.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
+                    if (subItem is IconMenuItem subIcon)
+                    {
+                        subIcon.IconColor = TemaCapybara.MenuIcono;
+                        subIcon.IconSize = 18;
+                    }
+                }
+            }
+
+            // Restricciones para vendedor (IdRol != 1):
+            // Vendedor no puede comprar, no puede ver categorías ni proveedores, solo visualizar productos.
+            if (user.oRol.IdRol != 1)
+            {
+                menuCompras.Visible = false;
+                menuRegistrarCompra.Visible = false;
+                menuVerDetalleCompra.Visible = false;
+                Categorias.Visible = false;
+                menuProveedores.Visible = false;
+                subMenuRCompras.Visible = false;
+
+                // Asegurar que pueda acceder a Mantenimiento -> Productos (en modo solo lectura)
+                menuMantenimiento.Visible = true;
+                Productos.Visible = true;
+            }
         }
 
         // Evento que abre el formulario de productos cuando se hace clic en el menú correspondiente.
         private void Productos_Click(object sender, EventArgs e)
         {
-            abrirFormulario((IconMenuItem)sender, new FrmProducto(this)); // Abre el formulario de productos.
+            abrirFormulario((IconMenuItem)sender, new FrmProducto(this, user)); // Abre el formulario de productos pasando el usuario actual.
             this.lblIndicador.Text = "Gestion Productos";
         }
 
@@ -222,7 +251,7 @@ namespace CapaPresentacion
         // Evento que abre el formulario de clientes cuando se hace clic en el menú correspondiente.
         private void menuClientes_Click(object sender, EventArgs e)
         {
-            abrirFormulario((IconMenuItem)sender, new FrmClientes()); // Abre el formulario de clientes.
+            abrirFormulario((IconMenuItem)sender, new FrmClientes(user)); // Abre el formulario de clientes.
             this.lblIndicador.Text = "Gestion Clientes";
         }
 

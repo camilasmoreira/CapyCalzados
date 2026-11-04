@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Utilidades;
 using ClosedXML.Excel;
@@ -23,10 +23,27 @@ namespace CapaPresentacion
         // Método que se ejecuta al cargar el formulario
         private void FrmReporteVentas_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
+
+            // Ocultar columnas innecesarias de cliente y agregar columna Forma de Pago
+            if (dgvData.Columns.Contains("DocumentoCliente"))
+                dgvData.Columns["DocumentoCliente"].Visible = false;
+            if (dgvData.Columns.Contains("NombreCliente"))
+                dgvData.Columns["NombreCliente"].Visible = false;
+
+            if (!dgvData.Columns.Contains("FormaPago"))
+            {
+                DataGridViewTextBoxColumn colFormaPago = new DataGridViewTextBoxColumn();
+                colFormaPago.Name = "FormaPago";
+                colFormaPago.HeaderText = "Forma de Pago";
+                colFormaPago.Width = 130;
+                dgvData.Columns.Insert(3, colFormaPago);
+            }
+
             // Llenar el combo de búsqueda con las columnas visibles del DataGridView
             foreach (DataGridViewColumn columna in dgvData.Columns)
             {
-                if (columna.Visible)
+                if (columna.Visible && columna.Name != "btnDetalle")
                 {
                     comboBusqueda.Items.Add(new OpcionesCombo() { Valor = columna.Name, Texto = columna.HeaderText });
                 }
@@ -48,10 +65,13 @@ namespace CapaPresentacion
             {
                 DataTable dt = new DataTable(); // Crea un DataTable para almacenar los datos
 
-                // Agrega las columnas al DataTable
+                // Agrega las columnas visibles al DataTable
                 foreach (DataGridViewColumn colum in dgvData.Columns)
                 {
-                    dt.Columns.Add(colum.HeaderText, typeof(string));
+                    if (colum.Visible && colum.Name != "btnDetalle")
+                    {
+                        dt.Columns.Add(colum.HeaderText, typeof(string));
+                    }
                 }
 
                 // Agrega las filas al DataTable
@@ -59,22 +79,15 @@ namespace CapaPresentacion
                 {
                     if (rows.Visible) // Solo agrega filas visibles
                     {
-                        dt.Rows.Add(new object[]
+                        List<object> valores = new List<object>();
+                        foreach (DataGridViewColumn colum in dgvData.Columns)
                         {
-                            rows.Cells[0].Value.ToString(),
-                            rows.Cells[1].Value.ToString(),
-                            rows.Cells[2].Value.ToString(),
-                            rows.Cells[3].Value.ToString(),
-                            rows.Cells[4].Value.ToString(),
-                            rows.Cells[5].Value.ToString(),
-                            rows.Cells[6].Value.ToString(),
-                            rows.Cells[7].Value.ToString(),
-                            rows.Cells[8].Value.ToString(),
-                            rows.Cells[9].Value.ToString(),
-                            rows.Cells[10].Value.ToString(),
-                            rows.Cells[11].Value.ToString(),
-                            rows.Cells[12].Value.ToString()
-                        });
+                            if (colum.Visible && colum.Name != "btnDetalle")
+                            {
+                                valores.Add(rows.Cells[colum.Index].Value?.ToString() ?? "");
+                            }
+                        }
+                        dt.Rows.Add(valores.ToArray());
                     }
                 }
 
@@ -121,6 +134,7 @@ namespace CapaPresentacion
                     rv.FechaRegistro,
                     rv.TipoDocumento,
                     rv.NumeroDocumento,
+                    string.IsNullOrEmpty(rv.FormaPago) ? "Efectivo" : rv.FormaPago,
                     rv.MontoTotal,
                     rv.UsuarioRegistro,
                     rv.DocumentoCliente,
@@ -209,25 +223,7 @@ namespace CapaPresentacion
 
         private void dgvData_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            // Evita la ejecución para el encabezado del DataGridView.
-            if (e.RowIndex < 0)
-            {
-                return;
-            }
-            // Verifica si la columna es la de selección.
-            if (e.ColumnIndex == 13)
-            {
-                e.Paint(e.CellBounds, DataGridViewPaintParts.All); // Dibuja la celda.
-                var w = Properties.Resources.comprobado.Width - 15; // Ancho del icono.
-                var h = Properties.Resources.comprobado.Height - 15; // Alto del icono.
-
-                // Calcula la posición para centrar el icono.
-                var x = e.CellBounds.Left + (e.CellBounds.Width - w) / 2;
-                var y = e.CellBounds.Top + (e.CellBounds.Height - h) / 2;
-
-                e.Graphics.DrawImage(Properties.Resources.comprobado, new Rectangle(x, y, w, h)); // Dibuja el icono.
-                e.Handled = true; // Marca la celda como manejada.
-            }
+            TemaCapybara.ModernDgv_CellPainting(sender, e);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
 using CapaPresentacion.Modales;
 using CapaPresentacion.Utilidades;
@@ -14,9 +14,13 @@ namespace CapaPresentacion
     public partial class FrmCompras : Form
     {
         private Usuario usuarioActual;
-        public Inicio inicio {  get; set; }
+        public Inicio inicio { get; set; }
+        private NumericUpDown txtPorcentaje;
+        private Label lblPorcentaje;
+        private bool actualizandoPrecios = false;
+
         // Constructor de la clase FrmCompras
-        public FrmCompras(Usuario oUsuario,Inicio pinicio)
+        public FrmCompras(Usuario oUsuario, Inicio pinicio)
         {
             usuarioActual = oUsuario; // Asigna el usuario actual si se proporciona uno, de lo contrario será null
             InitializeComponent(); // Inicializa los componentes del formulario
@@ -27,6 +31,7 @@ namespace CapaPresentacion
         // Maneja el evento Load del formulario FrmCompras
         private void FrmCompras_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
             // Agrega opciones al ComboBox comboDocumento
             comboDocumento.Items.Add(new OpcionesCombo() { Valor = "Recibo", Texto = "Recibo" }); // Opción para "Recibo"
             comboDocumento.Items.Add(new OpcionesCombo() { Valor = "Factura", Texto = "Factura" }); // Opción para "Factura"
@@ -42,6 +47,87 @@ namespace CapaPresentacion
             // Inicializa los campos de ID de producto y proveedor
             txtIdProd.Text = "0"; // Establece el ID del producto a 0, indicando que no hay producto seleccionado
             txtIdProveedor.Text = "0"; // Establece el ID del proveedor a 0, indicando que no hay proveedor seleccionado
+
+            // Configurar control de Porcentaje (%) entre Precio de Compra y Precio de Venta
+            ConfigurarControlPorcentaje();
+        }
+
+        private void ConfigurarControlPorcentaje()
+        {
+            // Ajustar posiciones de Precio Compra y Precio Venta para ubicar el Porcentaje en el medio
+            label6.Location = new Point(312, 43);
+            txtPrecioC.Location = new Point(312, 59);
+            txtPrecioC.Size = new Size(105, 36);
+
+            lblPorcentaje = new Label();
+            lblPorcentaje.AutoSize = true;
+            lblPorcentaje.BackColor = label6.BackColor;
+            lblPorcentaje.Font = label6.Font;
+            lblPorcentaje.ForeColor = label6.ForeColor;
+            lblPorcentaje.Location = new Point(422, 43);
+            lblPorcentaje.Name = "lblPorcentaje";
+            lblPorcentaje.Text = "% Ganancia:";
+
+            txtPorcentaje = new NumericUpDown();
+            txtPorcentaje.Name = "txtPorcentaje";
+            txtPorcentaje.BackColor = txtCantidad.BackColor;
+            txtPorcentaje.ForeColor = txtCantidad.ForeColor;
+            txtPorcentaje.Font = txtCantidad.Font;
+            txtPorcentaje.BorderStyle = BorderStyle.FixedSingle;
+            txtPorcentaje.Minimum = 0;
+            txtPorcentaje.Maximum = 1000;
+            txtPorcentaje.DecimalPlaces = 0;
+            txtPorcentaje.Value = 25;
+            txtPorcentaje.Location = new Point(425, 65);
+            txtPorcentaje.Size = new Size(60, 29);
+
+            label7.Location = new Point(494, 43);
+            txtPrecioV.Location = new Point(494, 59);
+            txtPrecioV.Size = new Size(105, 36);
+
+            groupBox3.Controls.Add(lblPorcentaje);
+            groupBox3.Controls.Add(txtPorcentaje);
+            lblPorcentaje.BringToFront();
+            txtPorcentaje.BringToFront();
+
+            txtPrecioC._TextChanged += (s, ev) => CalcularPrecioVentaDesdePorcentaje();
+            txtPorcentaje.ValueChanged += (s, ev) => CalcularPrecioVentaDesdePorcentaje();
+            txtPrecioV._TextChanged += (s, ev) => CalcularPorcentajeDesdePrecioVenta();
+        }
+
+        private void CalcularPrecioVentaDesdePorcentaje()
+        {
+            if (actualizandoPrecios) return;
+            if (decimal.TryParse(txtPrecioC.Texts.Trim(), out decimal pc) && pc > 0)
+            {
+                actualizandoPrecios = true;
+                decimal porc = txtPorcentaje.Value;
+                decimal pv = pc + (pc * (porc / 100m));
+                txtPrecioV.Texts = pv.ToString("0.00");
+                actualizandoPrecios = false;
+            }
+            else if (string.IsNullOrWhiteSpace(txtPrecioC.Texts))
+            {
+                actualizandoPrecios = true;
+                txtPrecioV.Texts = "";
+                actualizandoPrecios = false;
+            }
+        }
+
+        private void CalcularPorcentajeDesdePrecioVenta()
+        {
+            if (actualizandoPrecios) return;
+            if (decimal.TryParse(txtPrecioC.Texts.Trim(), out decimal pc) && pc > 0 &&
+                decimal.TryParse(txtPrecioV.Texts.Trim(), out decimal pv) && pv >= pc)
+            {
+                actualizandoPrecios = true;
+                decimal porc = ((pv - pc) / pc) * 100m;
+                if (porc >= txtPorcentaje.Minimum && porc <= txtPorcentaje.Maximum)
+                {
+                    txtPorcentaje.Value = Math.Round(porc, 0);
+                }
+                actualizandoPrecios = false;
+            }
         }
 
 
@@ -91,6 +177,12 @@ namespace CapaPresentacion
                 return; // Sale del método si el formato es incorrecto
             }
 
+            // Si el precio de venta está vacío pero hay porcentaje y precio de compra, calcularlo automáticamente
+            if (string.IsNullOrWhiteSpace(txtPrecioV.Texts) && precioCompra > 0)
+            {
+                CalcularPrecioVentaDesdePorcentaje();
+            }
+
             // Intenta convertir el precio de venta a decimal
             if (!decimal.TryParse(txtPrecioV.Texts, out precioVenta))
             {
@@ -108,6 +200,7 @@ namespace CapaPresentacion
                 if (fila.Cells["IdProducto"].Value.ToString() == txtIdProd.Text)
                 {
                     prodExist = true; // Marca que el producto ya existe
+                    MessageBox.Show("El producto ya está ingresado en la lista de compra.", "Producto ya ingresado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return; // Sale del método si el producto ya está en la lista
                 }
             }
@@ -117,13 +210,13 @@ namespace CapaPresentacion
             {
                 dgvData.Rows.Add(new object[]
                 {
-            txtIdProd.Text, // ID del producto
-            txtProducto.Texts, // Nombre del producto
-            oProducto.Descripcion, // Descripción del producto
-            precioCompra.ToString("0.00"), // Precio de compra con formato
-            precioVenta.ToString("0.00"), // Precio de venta con formato
-            txtCantidad.Value.ToString(), // Cantidad seleccionada
-            (txtCantidad.Value * precioCompra).ToString("0.00") // Cálculo del subtotal
+                    txtIdProd.Text, // ID del producto
+                    txtProducto.Texts, // Nombre del producto
+                    oProducto != null ? oProducto.Descripcion : "", // Descripción del producto
+                    precioCompra.ToString("0.00"), // Precio de compra con formato
+                    precioVenta.ToString("0.00"), // Precio de venta con formato
+                    txtCantidad.Value.ToString(), // Cantidad seleccionada
+                    (txtCantidad.Value * precioCompra).ToString("0.00") // Cálculo del subtotal
                 });
 
                 calcularTotal(); // Llama al método para calcular el total de la compra
@@ -179,6 +272,8 @@ namespace CapaPresentacion
             txtProducto.Texts = "";
             txtPrecioC.Texts = "";
             txtPrecioV.Texts = "";
+            if (txtPorcentaje != null)
+                txtPorcentaje.Value = 25;
             txtCantidad.Value = 1;
         }
 
@@ -207,32 +302,7 @@ namespace CapaPresentacion
         // Método que maneja el evento de pintura de celdas del DataGridView
         private void dgvData_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            // Verifica si el índice de la fila es menor que 0 (indica que no es una fila de datos)
-            if (e.RowIndex < 0)
-            {
-                return; // Sale del método si es una fila de encabezado o similar
-            }
-
-            // Verifica si la columna que se está pintando es la columna 7 (que se supone es la de eliminar)
-            if (e.ColumnIndex == 7)
-            {
-                // Dibuja la celda utilizando todos los elementos visuales
-                e.Paint(e.CellBounds, DataGridViewPaintParts.All);
-
-                // Define el ancho y alto del icono de eliminar, ajustando su tamaño
-                var w = Properties.Resources.borrar_1_.Width - 8;
-                var h = Properties.Resources.borrar_1_.Height - 8;
-
-                // Calcula la posición X y Y para centrar el icono dentro de la celda
-                var x = e.CellBounds.Left + (e.CellBounds.Width - w) / 2;
-                var y = e.CellBounds.Top + (e.CellBounds.Height - h) / 2;
-
-                // Dibuja el icono de eliminar en la celda
-                e.Graphics.DrawImage(Properties.Resources.borrar_1_, new Rectangle(x, y, w, h));
-
-                // Indica que el evento ha sido manejado
-                e.Handled = true;
-            }
+            TemaCapybara.ModernDgv_CellPainting(sender, e);
         }
 
 
@@ -325,35 +395,31 @@ namespace CapaPresentacion
         // Método que realiza las validaciones necesarias antes de registrar una compra
         private bool Validaciones()
         {
-            // Variable bandera que indica si todas las validaciones son exitosas
-            bool bandera = true;
-
-            // Verifica si el campo de documento está vacío
-            if (txtDocumento.Texts == "")
+            // Si el usuario escribió un documento de proveedor pero no presionó Enter, intentamos buscarlo
+            if (Convert.ToInt32(txtIdProveedor.Text) == 0 && !string.IsNullOrWhiteSpace(txtDocumento.Texts))
             {
-                bandera = false; // Marca la bandera como falsa si el campo está vacío
+                Proveedor prov = new CN_Proveedor().Listar()
+                    .FirstOrDefault(p => p.Documento == txtDocumento.Texts.Trim() && p.Estado == true);
+                if (prov != null)
+                {
+                    txtIdProveedor.Text = prov.IdProveedor.ToString();
+                    txtRazon.Texts = prov.RazonSocial;
+                }
             }
 
-            // Verifica si el campo de razón social está vacío
-            if (txtRazon.Texts == "")
+            if (Convert.ToInt32(txtIdProveedor.Text) == 0 || txtDocumento.Texts == "" || txtRazon.Texts == "")
             {
-                bandera = false; // Marca la bandera como falsa si el campo está vacío
+                MessageBox.Show("Debe seleccionar un proveedor válido para la compra.", "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
             }
 
-            // Verifica si no hay filas en el DataGridView
             if (dgvData.Rows.Count < 1)
             {
-                bandera = false; // Marca la bandera como falsa si no hay filas
+                MessageBox.Show("Debe ingresar al menos un producto en la compra.", "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
             }
 
-            // Verifica si el ID del proveedor es cero
-            if (Convert.ToInt32(txtIdProveedor.Text) == 0)
-            {
-                bandera = false; // Marca la bandera como falsa si el ID del proveedor es cero
-            }
-
-            // Devuelve el resultado de las validaciones
-            return bandera;
+            return true;
         }
 
 
@@ -371,11 +437,11 @@ namespace CapaPresentacion
                 {
                     // Crea un DataTable para almacenar los detalles de la compra
                     DataTable detalle_compra = new DataTable();
-                    detalle_compra.Columns.Add("IdProducto", typeof(int));     // Columna para el ID del producto
+                    detalle_compra.Columns.Add("IdProducto", typeof(int));       // Columna para el ID del producto
                     detalle_compra.Columns.Add("PrecioCompra", typeof(decimal)); // Columna para el precio de compra
                     detalle_compra.Columns.Add("PrecioVenta", typeof(decimal));  // Columna para el precio de venta
                     detalle_compra.Columns.Add("Cantidad", typeof(int));         // Columna para la cantidad
-                    detalle_compra.Columns.Add("MontoTotal", typeof(decimal));    // Columna para el monto total
+                    detalle_compra.Columns.Add("Total", typeof(decimal));        // Columna para el monto total (EDetalle_Compra)
 
                     // Itera a través de las filas del DataGridView para llenar el DataTable
                     foreach (DataGridViewRow row in dgvData.Rows)
@@ -383,11 +449,11 @@ namespace CapaPresentacion
                         detalle_compra.Rows.Add(
                             new Object[]
                             {
-                        Convert.ToInt32(row.Cells["IdProducto"].Value.ToString()), // Convierte el ID del producto a entero
-                        Convert.ToDecimal(row.Cells["PrecioCompra"].Value.ToString()), // Convierte el precio de compra a decimal
-                        Convert.ToDecimal(row.Cells["PrecioVenta"].Value.ToString()), // Convierte el precio de venta a decimal
-                        Convert.ToInt32(row.Cells["Cantidad"].Value.ToString()), // Convierte la cantidad a entero
-                        Convert.ToDecimal(row.Cells["SubTotal"].Value.ToString()) // Convierte el subtotal a decimal
+                                Convert.ToInt32(row.Cells["IdProducto"].Value.ToString()), // Convierte el ID del producto a entero
+                                Convert.ToDecimal(row.Cells["PrecioCompra"].Value.ToString()), // Convierte el precio de compra a decimal
+                                Convert.ToDecimal(row.Cells["PrecioVenta"].Value.ToString()), // Convierte el precio de venta a decimal
+                                Convert.ToInt32(row.Cells["Cantidad"].Value.ToString()), // Convierte la cantidad a entero
+                                Convert.ToDecimal(row.Cells["SubTotal"].Value.ToString()) // Convierte el subtotal a decimal
                             }
                         );
                     }
@@ -400,7 +466,7 @@ namespace CapaPresentacion
                     // Crea un objeto de compra con la información necesaria
                     Compra oCompra = new Compra()
                     {
-                        oUsuario = new Usuario() { IdUsuario = usuarioActual.IdUsuario }, // Establece el usuario actual
+                        oUsuario = new Usuario() { IdUsuario = usuarioActual != null ? usuarioActual.IdUsuario : 1 }, // Establece el usuario actual
                         oProveedor = new Proveedor() { IdProveedor = Convert.ToInt32(txtIdProveedor.Text) }, // Establece el proveedor seleccionado
                         TipoDocumento = ((OpcionesCombo)comboDocumento.SelectedItem).Texto, // Establece el tipo de documento
                         NumeroDocumento = numeroDocumento, // Asigna el número de documento generado
@@ -414,30 +480,21 @@ namespace CapaPresentacion
                     // Si el registro fue exitoso
                     if (respuesta)
                     {
-                        // Muestra un mensaje con el número de compra generada y pregunta si desea copiarlo al portapapeles
-                        var result = MessageBox.Show("Numero de compra generada:\n" + numeroDocumento + "\n\n¿Desea ver el detalle de compra?", "Mensaje", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-                        if (result == DialogResult.Yes)
-                        {
-                            Clipboard.SetText(numeroDocumento); // Copia el número de venta al portapapeles.
-                            inicio.inicio(new FrmDetalleVenta(numeroDocumento, inicio));
-                            txtIdProveedor.Text = "0";
-                            txtDocumento.Texts = "";
-                            txtRazon.Texts = "";
-                            // Limpia los datos del DataGridView
-                            dgvData.Rows.Clear();
-                            // Recalcula el total
-                            calcularTotal();
-                            this.Close();
-                        }
+                        // Muestra un mensaje indicando que la compra ya fue ingresada y ofrece ver el detalle
+                        var result = MessageBox.Show("¡La compra ya fue ingresada exitosamente!\n\nNúmero de compra generada: " + numeroDocumento + "\n\n¿Desea ver el comprobante / detalle de la compra?", "Compra Registrada", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
 
                         // Limpia los campos de entrada
                         txtIdProveedor.Text = "0";
                         txtDocumento.Texts = "";
                         txtRazon.Texts = "";
-                        // Limpia los datos del DataGridView
                         dgvData.Rows.Clear();
-                        // Recalcula el total
                         calcularTotal();
+
+                        if (result == DialogResult.Yes)
+                        {
+                            Clipboard.SetText(numeroDocumento); // Copia el número de compra al portapapeles.
+                            inicio.inicio(new FrmDetalleCompra(numeroDocumento, inicio));
+                        }
                     }
                     else
                     {
@@ -445,11 +502,6 @@ namespace CapaPresentacion
                         MessageBox.Show(Mensaje, "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
                 }
-            }
-            else
-            {
-                // Si las validaciones no se cumplen, muestra un mensaje de error
-                MessageBox.Show("No se pudo registrar la compra", "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 
@@ -501,11 +553,11 @@ namespace CapaPresentacion
             // Verificar si el carácter es un dígito
             bool esDigito = Char.IsDigit(e.KeyChar);
 
-            // Verificar la longitud actual del texto y permitir solo hasta 8 dígitos
-            bool longitudPermitida = txtDocumento.Texts.Length < 8;
+            // Verificar la longitud actual del texto y permitir solo hasta 15 caracteres
+            bool longitudPermitida = txtDocumento.Texts.Length < 15;
 
             // Permitir el carácter solo si es una tecla de control o un dígito y la longitud permitida no se ha alcanzado
-            if (esControl || (esDigito && longitudPermitida))
+            if (esControl || ((esDigito || e.KeyChar == '-') && longitudPermitida))
             {
                 e.Handled = false; // Permitir el carácter
             }
@@ -538,8 +590,7 @@ namespace CapaPresentacion
             // Verifica si la tecla presionada es la tecla "Enter"
             if (e.KeyData == Keys.Enter && txtPrecioC.Texts != "")
             {
-                decimal total = Convert.ToDecimal(txtPrecioC.Texts) + (Convert.ToDecimal(txtPrecioC.Texts) * 0.25m);
-                txtPrecioV.Texts = total.ToString();
+                CalcularPrecioVentaDesdePorcentaje();
             }
         }
     }

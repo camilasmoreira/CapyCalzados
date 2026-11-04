@@ -1,146 +1,119 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <title>Factura de Venta</title>
+    <title>Ticket Comprobante de Venta</title>
     <style>
-        /*body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f9f9f9;
-            color: #333;
-            margin: 0;
-            padding: 0;*/ /* Eliminado el padding */
-        /*}*/
-/*
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 0;  Eliminado el padding 
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            border-radius: 5px;
-        }*/
+        .ticket-box {
+            width: 100%;
+            border: 2px dashed #5c3d2e;
+            padding: 15px;
+        }
 
         .header {
             text-align: center;
-            margin-bottom: 0;  Eliminado el margen inferior 
+            margin-bottom: 10px;
         }
 
-            .header label {
-                font-size: 26px;
-                font-weight: bold;
-                color: #004085;
-            }
+        .header label {
+            font-size: 24px;
+            font-weight: bold;
+            color: #5c3d2e;
+        }
 
-            .header small {
-                display: block;
-                margin-top: 5px;
-                font-size: 12px;
-                color: #555;
-            }
+        .header small {
+            display: block;
+            margin-top: 4px;
+            font-size: 12px;
+            color: #444;
+        }
+
+        .highlight {
+            background-color: #5c3d2e;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
 
         .info-section, .product-table, .total-section {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
-            .info-section td {
-                padding: 10px 5px;
-            }
-
-            .product-table th, .product-table td {
-                padding: 15px;
-                border: 1px solid #ddd;
-                text-align: center;
-            }
-
-            .product-table th {
-                background-color: #004085;
-                color: #fff;
-                font-weight: bold;
-            }
-
-            .product-table tbody tr:nth-child(even) {
-                background-color: #f7f7f7;
-            }
-
-        .total-section {
-            width: 100%;
-            float: right;
-            margin-top: 20px;
+        .info-section td {
+            padding: 6px 5px;
+            font-size: 13px;
         }
 
-            .total-section th, .total-section td {
-                padding: 15px;
-                text-align: center;
-                font-size: 16px;
-                background-color: #f1f1f1;
-                border: 1px solid #ddd;
-            }
+        .product-table th, .product-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            text-align: center;
+        }
 
-        .highlight {
-            background-color: #004085;
+        .product-table th {
+            background-color: #5c3d2e;
             color: #fff;
-            font-size: 18px;
             font-weight: bold;
+        }
+
+        .total-section th, .total-section td {
             padding: 10px;
             text-align: center;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            font-size: 14px;
+            background-color: #f5ebe1;
+            border: 1px solid #d5c3b3;
         }
 
         .footer {
             text-align: center;
-            margin-top: 30px;
+            margin-top: 25px;
             font-size: 12px;
             color: #555;
         }
     </style>
-
 </head>
 <body>
-    <div class="container">
-
+    <div class="ticket-box">
         <!-- Header -->
         <div class="header">
             <label>@nombrenegocio</label><br />
-            <small>RUC: @docnegocio</small><br />
+            <small>TICKET COMPROBANTE DE VENTA</small><br />
+            <small>CUIT / RUC: @docnegocio</small><br />
             <small>Dirección: @direcnegocio</small><br />
         </div>
-        <br />
+        <hr />
         <!-- Tipo y número de documento -->
         <div class="highlight">
-            <strong>@tipodocumento - @numerodocumento</strong>
+            <strong>TICKET @tipodocumento N° @numerodocumento</strong>
         </div>
-        <br />
 
-        <!-- Información del cliente -->
+        <!-- Información de la operación -->
         <table class="info-section">
             <tr>
-                <td style="width: 40%; font-weight: bold;">Documento Cliente:</td>
-                <td>@doccliente</td>
-            </tr>
-            <tr>
-                <td style="width: 40%; font-weight: bold;">Nombre Cliente:</td>
-                <td>@nombrecliente</td>
-            </tr>
-            <tr>
-                <td style="width: 40%; font-weight: bold;">Fecha Registro:</td>
+                <td style="width: 35%; font-weight: bold;">Fecha y Hora:</td>
                 <td>@fecharegistro</td>
             </tr>
             <tr>
-                <td style="width: 40%; font-weight: bold;">Nombre Vendedor:</td>
+                <td style="width: 35%; font-weight: bold;">Forma de Pago:</td>
+                <td>@formapago</td>
+            </tr>
+            <tr>
+                <td style="width: 35%; font-weight: bold;">Vendedor:</td>
                 <td>@usuarioregistro</td>
             </tr>
         </table>
 
         <!-- Productos -->
-        <table class="product-table" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <table class="product-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
             <thead>
                 <tr>
                     <th>Producto</th>
-                    <th>Precio</th>
-                    <th>Cantidad</th>
-                    <th>Sub Total</th>
+                    <th>Precio Unit.</th>
+                    <th>Cant.</th>
+                    <th>SubTotal</th>
                 </tr>
             </thead>
             <tbody>
@@ -152,25 +125,26 @@
         <table class="total-section">
             <thead>
                 <tr>
-                    <th>Total</th>
-                    <th>Total con descuento</th>
-                    <th>Pago Con</th>
-                    <th>Cambio</th>
+                    <th>Subtotal</th>
+                    <th>TOTAL A PAGAR</th>
+                    <th>Pagó Con</th>
+                    <th>Vuelto</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>@tot</td>
-                    <td>@montototal</td>
-                    <td>@pagocon</td>
-                    <td>@cambio</td>
+                    <td>$@tot</td>
+                    <td><strong>$@montototal</strong></td>
+                    <td>$@pagocon</td>
+                    <td>$@cambio</td>
                 </tr>
             </tbody>
         </table>
 
         <!-- Footer -->
         <div class="footer">
-            <small>Gracias por su compra. Si tiene alguna consulta, no dude en contactarnos.</small>
+            <small>*** GRACIAS POR SU COMPRA EN CAPYCALZADOS ***</small><br />
+            <small>Conserve este ticket como comprobante de su compra.</small>
         </div>
     </div>
 </body>

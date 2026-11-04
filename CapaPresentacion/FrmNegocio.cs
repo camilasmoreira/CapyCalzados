@@ -1,5 +1,6 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using CapaNegocio;
+using CapaPresentacion.Utilidades;
 using System;
 using System.Drawing;
 using System.IO;
@@ -32,6 +33,7 @@ namespace CapaPresentacion
         // Evento que se ejecuta cuando se carga el formulario
         private void FrmNegocio_Load(object sender, EventArgs e)
         {
+            TemaCapybara.AplicarTema(this);
             // Variable para indicar si se ha obtenido correctamente el logotipo
             bool obtenido = true;
             // Obtener el logotipo del negocio desde la capa de negocio

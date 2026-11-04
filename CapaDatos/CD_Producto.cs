@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -17,12 +17,24 @@ namespace CapaDatos
             {
                 try
                 {
-
-
-
                     StringBuilder query = new StringBuilder();
-                    query.AppendLine("Select p.IdProducto,p.Codigo,p.Nombre,p.Descripcion,p.Marca,c.IdCategoria,c.Descripcion[DescripcionCategoria],p.Stock,p.PrecioCompra,p.PrecioVenta,p.Estado from Productos p");
-                    query.AppendLine("inner join Categorias c on c.IdCategoria = p.IdCategoria");
+                    query.AppendLine("SELECT p.IdProducto, p.Codigo, p.Nombre, p.Descripcion, p.Marca,");
+                    query.AppendLine("       c.IdCategoria, c.Descripcion AS [DescripcionCategoria],");
+                    query.AppendLine("       p.Stock, p.PrecioCompra, p.PrecioVenta, p.Estado,");
+                    query.AppendLine("       ISNULL(prDir.IdProveedor, ISNULL(prComp.IdProveedor, ISNULL(prMarca.IdProveedor, 0))) AS IdProveedor,");
+                    query.AppendLine("       ISNULL(prDir.RazonSocial, ISNULL(prComp.RazonSocial, ISNULL(prMarca.RazonSocial, p.Marca))) AS RazonSocialProveedor");
+                    query.AppendLine("FROM Productos p");
+                    query.AppendLine("INNER JOIN Categorias c ON c.IdCategoria = p.IdCategoria");
+                    query.AppendLine("LEFT JOIN Proveedor prDir ON prDir.IdProveedor = p.IdProveedor");
+                    query.AppendLine("LEFT JOIN (");
+                    query.AppendLine("    SELECT dc.IdProducto, co.IdProveedor,");
+                    query.AppendLine("           ROW_NUMBER() OVER (PARTITION BY dc.IdProducto ORDER BY co.FechaRegistro DESC, co.IdCompra DESC) AS rn");
+                    query.AppendLine("    FROM Detalle_Compra dc");
+                    query.AppendLine("    INNER JOIN Compra co ON co.IdCompra = dc.IdCompra");
+                    query.AppendLine(") ult ON ult.IdProducto = p.IdProducto AND ult.rn = 1");
+                    query.AppendLine("LEFT JOIN Proveedor prComp ON prComp.IdProveedor = ult.IdProveedor");
+                    query.AppendLine("LEFT JOIN Proveedor prMarca ON prMarca.RazonSocial = p.Marca");
+
                     SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
                     cmd.CommandType = CommandType.Text;
 
@@ -43,6 +55,11 @@ namespace CapaDatos
                                 PrecioCompra = Convert.ToDecimal(dr["PrecioCompra"]),
                                 PrecioVenta = Convert.ToDecimal(dr["PrecioVenta"]),
                                 Estado = Convert.ToBoolean(dr["Estado"]),
+                                oProveedor = new Proveedor()
+                                {
+                                    IdProveedor = Convert.ToInt32(dr["IdProveedor"]),
+                                    RazonSocial = string.IsNullOrWhiteSpace(dr["RazonSocialProveedor"].ToString()) ? "Sin proveedor" : dr["RazonSocialProveedor"].ToString()
+                                }
                             });
                         }
                     }
@@ -86,6 +103,16 @@ namespace CapaDatos
                     IdProductoGenerado = Convert.ToInt32(cmd.Parameters["Resultado"].Value);
                     Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
 
+                    if (IdProductoGenerado != 0 && obj.oProveedor != null && obj.oProveedor.IdProveedor > 0)
+                    {
+                        using (SqlCommand cmdProv = new SqlCommand("UPDATE Productos SET IdProveedor = @IdProveedor WHERE IdProducto = @IdProducto", oconexion))
+                        {
+                            cmdProv.Parameters.AddWithValue("@IdProveedor", obj.oProveedor.IdProveedor);
+                            cmdProv.Parameters.AddWithValue("@IdProducto", IdProductoGenerado);
+                            cmdProv.ExecuteNonQuery();
+                        }
+                    }
+
                 }
 
             }
@@ -128,6 +155,16 @@ namespace CapaDatos
 
                     Respuesta = Convert.ToBoolean(cmd.Parameters["Resultado"].Value);
                     Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
+
+                    if (Respuesta && obj.oProveedor != null && obj.oProveedor.IdProveedor > 0)
+                    {
+                        using (SqlCommand cmdProv = new SqlCommand("UPDATE Productos SET IdProveedor = @IdProveedor WHERE IdProducto = @IdProducto", oconexion))
+                        {
+                            cmdProv.Parameters.AddWithValue("@IdProveedor", obj.oProveedor.IdProveedor);
+                            cmdProv.Parameters.AddWithValue("@IdProducto", obj.IdProducto);
+                            cmdProv.ExecuteNonQuery();
+                        }
+                    }
 
                 }
 
