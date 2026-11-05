@@ -17,18 +17,14 @@ namespace CapaDatos
             {
                 try
                 {
-
                     StringBuilder query = new StringBuilder();
                     query.AppendLine("select Count(*) + 1 from Venta");
 
                     SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
-
                     cmd.CommandType = CommandType.Text;
 
                     oconexion.Open();
-
                     idCorrelativo = Convert.ToInt32(cmd.ExecuteScalar());
-
                 }
                 catch (Exception ex)
                 {
@@ -39,8 +35,6 @@ namespace CapaDatos
             return idCorrelativo;
         }
 
-
-
         public bool RestarStock(int idProd, int cantidad)
         {
             bool respuesta = true;
@@ -49,7 +43,6 @@ namespace CapaDatos
             {
                 try
                 {
-
                     StringBuilder query = new StringBuilder();
                     query.AppendLine("update Productos set Stock = Stock - @cantidad where IdProducto = @IdProducto");
 
@@ -59,9 +52,7 @@ namespace CapaDatos
                     cmd.CommandType = CommandType.Text;
 
                     oconexion.Open();
-
                     respuesta = cmd.ExecuteNonQuery() > 0 ? true : false;
-
                 }
                 catch (Exception ex)
                 {
@@ -71,6 +62,7 @@ namespace CapaDatos
 
             return respuesta;
         }
+
         public bool SumarStock(int idProd, int cantidad)
         {
             bool respuesta = true;
@@ -79,7 +71,6 @@ namespace CapaDatos
             {
                 try
                 {
-
                     StringBuilder query = new StringBuilder();
                     query.AppendLine("update Productos set Stock = Stock + @cantidad where IdProducto = @IdProducto");
 
@@ -89,9 +80,7 @@ namespace CapaDatos
                     cmd.CommandType = CommandType.Text;
 
                     oconexion.Open();
-
                     respuesta = cmd.ExecuteNonQuery() > 0 ? true : false;
-
                 }
                 catch (Exception ex)
                 {
@@ -110,7 +99,6 @@ namespace CapaDatos
             {
                 try
                 {
-
                     SqlCommand cmd = new SqlCommand("SP_REGISTRARVENTA", oconexion);
                     cmd.Parameters.AddWithValue("IdUsuario", obj.oUsuario.IdUsuario);
                     cmd.Parameters.AddWithValue("IdCliente", (obj.oCliente != null && obj.oCliente.IdCliente > 0) ? (object)obj.oCliente.IdCliente : DBNull.Value);
@@ -124,7 +112,6 @@ namespace CapaDatos
                     cmd.Parameters.Add("Resultado", SqlDbType.Int).Direction = ParameterDirection.Output;
                     cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
                     cmd.CommandType = CommandType.StoredProcedure;
-
 
                     oconexion.Open();
                     cmd.ExecuteNonQuery();
@@ -140,7 +127,73 @@ namespace CapaDatos
             return Resultado;
         }
 
+        public List<Venta> ListarVentas(DateTime fechaInicio, DateTime fechaFin, string numero = "")
+        {
+            List<Venta> lista = new List<Venta>();
+            using (SqlConnection oconexion = new SqlConnection(Conexion.cadena))
+            {
+                try
+                {
+                    oconexion.Open();
+                    StringBuilder query = new StringBuilder();
+                    query.AppendLine("SELECT v.IdVenta, u.NombreCompleto, u.Documento,");
+                    query.AppendLine("v.IdCliente, ISNULL(c.Documento, '') AS DocumentoCliente, ISNULL(c.NombreCompleto, 'Consumidor Final') AS NombreCliente,");
+                    query.AppendLine("v.TipoDocumento, ISNULL(v.FormaPago, 'Efectivo') AS FormaPago, v.NumeroDocumento,");
+                    query.AppendLine("v.MontoPago, v.MontoCambio, v.MontoTotal,");
+                    query.AppendLine("CONVERT(char(10), v.FechaRegistro, 103) AS FechaRegistro");
+                    query.AppendLine("FROM Venta v");
+                    query.AppendLine("INNER JOIN Usuario u ON u.IdUsuario = v.IdUsuario");
+                    query.AppendLine("LEFT JOIN Cliente c ON c.IdCliente = v.IdCliente");
+                    query.AppendLine("WHERE CAST(v.FechaRegistro AS DATE) BETWEEN CAST(@fechaInicio AS DATE) AND CAST(@fechaFin AS DATE)");
+                    if (!string.IsNullOrWhiteSpace(numero))
+                    {
+                        query.AppendLine("AND v.NumeroDocumento LIKE '%' + @numero + '%'");
+                    }
+                    query.AppendLine("ORDER BY v.FechaRegistro DESC, v.IdVenta DESC");
 
+                    SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
+                    cmd.Parameters.AddWithValue("@fechaInicio", fechaInicio.Date);
+                    cmd.Parameters.AddWithValue("@fechaFin", fechaFin.Date);
+                    if (!string.IsNullOrWhiteSpace(numero))
+                    {
+                        cmd.Parameters.AddWithValue("@numero", numero.Trim());
+                    }
+                    cmd.CommandType = CommandType.Text;
+
+                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            lista.Add(new Venta()
+                            {
+                                IdVenta = Convert.ToInt32(dr["IdVenta"]),
+                                oUsuario = new Usuario { NombreCompleto = dr["NombreCompleto"].ToString(), Documento = dr["Documento"].ToString() },
+                                oCliente = new Cliente
+                                {
+                                    IdCliente = dr["IdCliente"] != DBNull.Value ? Convert.ToInt32(dr["IdCliente"]) : 0,
+                                    Documento = dr["DocumentoCliente"].ToString(),
+                                    NombreCompleto = dr["NombreCliente"].ToString()
+                                },
+                                DocumentoCliente = dr["DocumentoCliente"].ToString(),
+                                NombreCliente = dr["NombreCliente"].ToString(),
+                                TipoDocumento = dr["TipoDocumento"].ToString(),
+                                FormaPago = dr["FormaPago"].ToString(),
+                                NumeroDocumento = dr["NumeroDocumento"].ToString(),
+                                MontoPago = Convert.ToDecimal(dr["MontoPago"]),
+                                MontoCambio = Convert.ToDecimal(dr["MontoCambio"]),
+                                MontoTotal = Convert.ToDecimal(dr["MontoTotal"]),
+                                FechaRegistro = dr["FechaRegistro"].ToString()
+                            });
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lista = new List<Venta>();
+                }
+            }
+            return lista;
+        }
 
         public Venta obtenerVenta(string numero)
         {
@@ -150,10 +203,7 @@ namespace CapaDatos
                 try
                 {
                     oconexion.Open();
-
                     StringBuilder query = new StringBuilder();
-
-
                     query.AppendLine("select v.IdVenta,u.NombreCompleto,u.Documento,");
                     query.AppendLine("v.IdCliente,ISNULL(c.Documento, '') AS DocumentoCliente,ISNULL(c.NombreCompleto, 'Consumidor Final') AS NombreCliente,");
                     query.AppendLine("v.TipoDocumento,ISNULL(v.FormaPago, 'Efectivo') AS FormaPago,v.NumeroDocumento,");
@@ -175,7 +225,8 @@ namespace CapaDatos
                             {
                                 IdVenta = Convert.ToInt32(dr["IdVenta"]),
                                 oUsuario = new Usuario { NombreCompleto = dr["NombreCompleto"].ToString(), Documento = dr["Documento"].ToString() },
-                                oCliente = new Cliente {
+                                oCliente = new Cliente
+                                {
                                     IdCliente = dr["IdCliente"] != DBNull.Value ? Convert.ToInt32(dr["IdCliente"]) : 0,
                                     Documento = dr["DocumentoCliente"].ToString(),
                                     NombreCompleto = dr["NombreCliente"].ToString()
@@ -192,7 +243,6 @@ namespace CapaDatos
                             };
                         }
                     }
-
                 }
                 catch (Exception ex)
                 {
@@ -202,7 +252,6 @@ namespace CapaDatos
 
             return obj;
         }
-
 
         public List<DetalleVenta> obtenerDetalleVenta(int idVenta)
         {
@@ -214,13 +263,11 @@ namespace CapaDatos
                 {
                     oconexion.Open();
                     StringBuilder query = new StringBuilder();
-
-
-
-                    query.AppendLine("select p.Nombre,p.Descripcion,dv.PrecioVenta,dv.Cantidad,dv.SubTotal from Detalle_Venta dv");
+                    query.AppendLine("select p.Codigo, p.Nombre, p.Descripcion, ISNULL(ca.Descripcion,'') AS Categoria, dv.PrecioVenta, dv.Cantidad, dv.SubTotal");
+                    query.AppendLine("from Detalle_Venta dv");
                     query.AppendLine("inner join Productos p on p.IdProducto = dv.IdProducto");
+                    query.AppendLine("left join Categorias ca on ca.IdCategoria = p.IdCategoria");
                     query.AppendLine("where dv.IdVenta = @IdVenta");
-
 
                     SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
                     cmd.Parameters.AddWithValue("@IdVenta", idVenta);
@@ -232,7 +279,13 @@ namespace CapaDatos
                         {
                             oLista.Add(new DetalleVenta()
                             {
-                                oProducto = new Producto() { Nombre = dr["Nombre"].ToString() , Descripcion = dr["Descripcion"].ToString() },
+                                oProducto = new Producto()
+                                {
+                                    Codigo = dr["Codigo"].ToString(),
+                                    Nombre = dr["Nombre"].ToString(),
+                                    Descripcion = dr["Descripcion"].ToString(),
+                                    oCategoria = new Categoria() { Descripcion = dr["Categoria"].ToString() }
+                                },
                                 PrecioVenta = Convert.ToDecimal(dr["PrecioVenta"].ToString()),
                                 Cantidad = Convert.ToInt32(dr["Cantidad"].ToString()),
                                 SubTotal = Convert.ToDecimal(dr["SubTotal"].ToString())
@@ -245,7 +298,6 @@ namespace CapaDatos
                     oLista = new List<DetalleVenta>();
                 }
             }
-
 
             return oLista;
         }

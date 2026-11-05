@@ -92,7 +92,6 @@ namespace CapaPresentacion
             }
         }
 
-
         // Método para abrir un formulario sin modificar el menú activo.
         public void inicio(Form formulario)
         {
@@ -152,9 +151,6 @@ namespace CapaPresentacion
             formulario.Show();
         }
 
-
-
-
         // Evento que se ejecuta al cargar el formulario principal.
         private void Inicio_Load(object sender, EventArgs e)
         {
@@ -172,13 +168,79 @@ namespace CapaPresentacion
                 }
             }
 
-            if (user.oRol.IdRol != 1)
+            bool esGerente = user.oRol != null && (user.oRol.IdRol == 1 || string.Equals(user.oRol.Descripcion, "Gerente", StringComparison.OrdinalIgnoreCase));
+            bool esVendedor = user.oRol != null && (user.oRol.IdRol == 2 || string.Equals(user.oRol.Descripcion, "Vendedor", StringComparison.OrdinalIgnoreCase));
+            bool esManager = user.oRol != null && (user.oRol.IdRol == 3 || string.Equals(user.oRol.Descripcion, "Manager", StringComparison.OrdinalIgnoreCase));
+
+            // Reestructuración de Perfiles:
+            if (esManager)
             {
+                // Manager: Perfil operativo que hace todo (Registra compras, ventas, gestiona productos, proveedores, clientes y mantenimiento de usuarios).
+                menuInicio.Visible = true;
+                menuVentas.Visible = true;
+                menuRegistrarVenta.Visible = true;
+                menuVerDetalle.Visible = true;
+                menuCompras.Visible = true;
+                menuRegistrarCompra.Visible = true;
+                menuVerDetalleCompra.Visible = true;
+                menuClientes.Visible = true;
+                menuMantenimiento.Visible = true;
+                Productos.Visible = true;
+                Categorias.Visible = true;
+                Negocio.Visible = true;
+                Backup.Visible = true;
+                menuProveedores.Visible = true;
+                menuUsuarios.Visible = true;
+                menuReportes.Visible = true;
+                subMenuRVentas.Visible = true;
+                subMenuRCompras.Visible = true;
+                menuGraficos.Visible = false; // El módulo de estadísticas/gráficos es para el Gerente (analítico)
+            }
+            else if (esGerente)
+            {
+                // Gerente: Perfil estrictamente analítico. No debe poder registrar compras ni ventas, solo debe ver gráficos y reportes.
+                menuInicio.Visible = true;
+                menuVentas.Visible = false;
+                menuCompras.Visible = false;
+                menuClientes.Visible = false;
+                menuMantenimiento.Visible = false;
+                menuProveedores.Visible = false;
+                menuUsuarios.Visible = false;
                 Negocio.Visible = false;
                 Backup.Visible = false;
+
+                menuGraficos.Visible = true;
+                menuReportes.Visible = true;
+                subMenuRVentas.Visible = true;
+                subMenuRCompras.Visible = true;
+            }
+            else if (esVendedor)
+            {
+                // Vendedor: Registra ventas, gestiona clientes (sin eliminar), y solo visualiza productos.
+                menuInicio.Visible = true;
+                menuVentas.Visible = true;
+                menuRegistrarVenta.Visible = true;
+                menuVerDetalle.Visible = true;
+                menuClientes.Visible = true;
+
+                menuCompras.Visible = false;
+                menuRegistrarCompra.Visible = false;
+                menuVerDetalleCompra.Visible = false;
+                menuProveedores.Visible = false;
+                menuUsuarios.Visible = false;
+                menuGraficos.Visible = false;
+
+                menuMantenimiento.Visible = true;
+                Productos.Visible = true;
+                Categorias.Visible = false;
+                Negocio.Visible = false;
+                Backup.Visible = false;
+
+                menuReportes.Visible = true;
+                subMenuRVentas.Visible = true;
+                subMenuRCompras.Visible = false;
             }
 
-      
             DateTime fecha = DateTime.Now;
             try
             {
@@ -215,22 +277,6 @@ namespace CapaPresentacion
                         subIcon.IconSize = 18;
                     }
                 }
-            }
-
-            // Restricciones para vendedor (IdRol != 1):
-            // Vendedor no puede comprar, no puede ver categorías ni proveedores, solo visualizar productos.
-            if (user.oRol.IdRol != 1)
-            {
-                menuCompras.Visible = false;
-                menuRegistrarCompra.Visible = false;
-                menuVerDetalleCompra.Visible = false;
-                Categorias.Visible = false;
-                menuProveedores.Visible = false;
-                subMenuRCompras.Visible = false;
-
-                // Asegurar que pueda acceder a Mantenimiento -> Productos (en modo solo lectura)
-                menuMantenimiento.Visible = true;
-                Productos.Visible = true;
             }
         }
 
@@ -279,14 +325,14 @@ namespace CapaPresentacion
         // Evento que abre el formulario para registrar ventas cuando se hace clic en el menú correspondiente.
         private void menuRegistrarVenta_Click(object sender, EventArgs e)
         {
-            abrirFormulario((IconMenuItem)sender, new FrmVentas(user,this)); // Abre el formulario de registro de ventas.
+            abrirFormulario((IconMenuItem)sender, new FrmVentas(user, this)); // Abre el formulario de registro de ventas.
             this.lblIndicador.Text = "Ventas";
         }
 
         // Evento que abre el formulario para registrar compras cuando se hace clic en el menú correspondiente.
         private void menuRegistrarCompra_Click(object sender, EventArgs e)
         {
-            abrirFormulario((IconMenuItem)sender, new FrmCompras(user,this)); // Abre el formulario de registro de compras.
+            abrirFormulario((IconMenuItem)sender, new FrmCompras(user, this)); // Abre el formulario de registro de compras.
             this.lblIndicador.Text = "Compras";
         }
 
@@ -307,7 +353,7 @@ namespace CapaPresentacion
         // Evento que abre el formulario de configuración del negocio, si el usuario tiene permisos.
         private void Negocio_Click(object sender, EventArgs e)
         {
-            if (user.oRol.IdRol == 1) // Verifica si el usuario es administrador.
+            if (user.oRol != null && (user.oRol.IdRol == 3 || user.oRol.IdRol == 1 || string.Equals(user.oRol.Descripcion, "Manager", StringComparison.OrdinalIgnoreCase)))
             {
                 abrirFormulario((IconMenuItem)sender, new FrmNegocio(this)); // Abre el formulario de configuración del negocio.
                 this.lblIndicador.Text = "Gestion Negocio";
@@ -347,7 +393,7 @@ namespace CapaPresentacion
         private void menuGraficos_Click(object sender, EventArgs e)
         {
             abrirFormulario((IconMenuItem)sender, new FrmGraficos()); // Abre el formulario de gráficos.
-            this.lblIndicador.Text = "Gestion Graficos";
+            this.lblIndicador.Text = "Estadísticas y Gráficos";
         }
 
         private void iconMenuItem9_MouseEnter(object sender, EventArgs e)
@@ -370,8 +416,6 @@ namespace CapaPresentacion
             using (var modal = new mdBackup())
             {
                 var result = modal.ShowDialog(); // Muestra el diálogo modal.
-
-  
             }
         }
     }

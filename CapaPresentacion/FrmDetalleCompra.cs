@@ -5,70 +5,343 @@ using iTextSharp.text;
 using iTextSharp.text.pdf;
 using iTextSharp.tool.xml;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 
 namespace CapaPresentacion
 {
-    // Formulario para mostrar el detalle de una compra
+    // Formulario Maestro-Detalle de Compras con Filtros de Fecha y Ticket Comprobante de Compra
     public partial class FrmDetalleCompra : Form
     {
-        public Inicio inicio {  get; set; }
+        public Inicio inicio { get; set; }
         public string doc { get; set; }
-        // Constructor que recibe un objeto Usuario y ajusta la visibilidad del botón de validación
+
+        private DataGridView dgvFacturas;
+        private DateTimePicker dtFechaInicio;
+        private DateTimePicker dtFechaFin;
+        private ComboBox comboPeriodo;
+        private Label lblMaestro;
+        private Label lblDetalle;
+        private List<Compra> _listaComprasActual = new List<Compra>();
+
         public FrmDetalleCompra(Usuario obj)
         {
             InitializeComponent();
+            ConfigurarInterfazMaestroDetalle();
 
-            // Si el usuario no tiene el rol de administrador (IdRol != 1), se oculta el botón de validación
-            if (obj.oRol.IdRol != 1)
+            bool puedeValidar = obj != null && obj.oRol != null &&
+                (obj.oRol.IdRol == 3 || obj.oRol.IdRol == 1 || string.Equals(obj.oRol.Descripcion, "Manager", StringComparison.OrdinalIgnoreCase));
+            if (!puedeValidar)
             {
                 btnValidar.Visible = false;
             }
         }
+
         public FrmDetalleCompra(string numero, Inicio pinicio)
         {
             InitializeComponent();
             inicio = pinicio;
             inicio.pintar();
+            ConfigurarInterfazMaestroDetalle();
             this.doc = numero;
-            txtBusqueda.Texts = this.doc;
-            btnBuscar_Click(this, new EventArgs());
         }
 
-
-        // Evento que busca una compra por su número de documento cuando se hace clic en el botón "Buscar"
-        private void btnBuscar_Click(object sender, EventArgs e)
+        private void ConfigurarInterfazMaestroDetalle()
         {
-            // Obtiene la compra utilizando el número ingresado en el campo de búsqueda
-            Compra oCompra = new CN_Compra().obtenerCompra(txtBusqueda.Texts);
+            // 1. Panel superior de Búsqueda y Filtros (Fecha + N° Compra + Buscar + Validar)
+            groupBox2.Text = "Búsqueda y Filtros de Compras";
+            groupBox2.Location = new Point(55, 22);
+            groupBox2.Size = new Size(810, 78);
 
-            // Si se encuentra la compra, se rellenan los campos del formulario con los datos de la compra
+            label1.Text = "N° Compra:";
+            label1.Location = new Point(14, 18);
+            txtBusqueda.Location = new Point(14, 37);
+            txtBusqueda.Size = new Size(105, 32);
+            txtBusqueda.PlaceholderText = "Todos / N°";
+
+            Label lblPeriodo = new Label()
+            {
+                AutoSize = true,
+                Text = "Período:",
+                Location = new Point(128, 18),
+                Font = new System.Drawing.Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            comboPeriodo = new ComboBox()
+            {
+                Name = "comboPeriodo",
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat,
+                Location = new Point(128, 39),
+                Size = new Size(115, 28)
+            };
+            comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "TODO", Texto = "Todo el historial" });
+            comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "SEMANA", Texto = "Última Semana" });
+            comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "MES", Texto = "Último Mes" });
+            comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "ANIO", Texto = "Último Año" });
+            comboPeriodo.DisplayMember = "Texto";
+            comboPeriodo.ValueMember = "Valor";
+            comboPeriodo.SelectedIndex = 0;
+            comboPeriodo.SelectedIndexChanged += ComboPeriodo_SelectedIndexChanged;
+
+            Label lblDesde = new Label()
+            {
+                AutoSize = true,
+                Text = "Desde:",
+                Location = new Point(252, 18),
+                Font = new System.Drawing.Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            dtFechaInicio = new DateTimePicker()
+            {
+                Format = DateTimePickerFormat.Short,
+                Location = new Point(252, 40),
+                Size = new Size(98, 26),
+                Value = DateTime.Now.AddYears(-2)
+            };
+
+            Label lblHasta = new Label()
+            {
+                AutoSize = true,
+                Text = "Hasta:",
+                Location = new Point(358, 18),
+                Font = new System.Drawing.Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            dtFechaFin = new DateTimePicker()
+            {
+                Format = DateTimePickerFormat.Short,
+                Location = new Point(358, 40),
+                Size = new Size(98, 26),
+                Value = DateTime.Now.AddDays(1)
+            };
+
+            rjButton1.Text = "  Buscar";
+            rjButton1.Location = new Point(468, 28);
+            rjButton1.Size = new Size(110, 38);
+
+            BtnLimpiar2.Text = "  Limpiar";
+            BtnLimpiar2.Location = new Point(584, 28);
+            BtnLimpiar2.Size = new Size(110, 38);
+
+            btnValidar.Text = "Validar";
+            btnValidar.Location = new Point(700, 28);
+            btnValidar.Size = new Size(98, 38);
+
+            groupBox2.Controls.Add(lblPeriodo);
+            groupBox2.Controls.Add(comboPeriodo);
+            groupBox2.Controls.Add(lblDesde);
+            groupBox2.Controls.Add(dtFechaInicio);
+            groupBox2.Controls.Add(lblHasta);
+            groupBox2.Controls.Add(dtFechaFin);
+
+            // Compactar encabezado seleccionado
+            groupBox3.Visible = false;
+            groupBox1.Text = "Encabezado de la Compra Seleccionada";
+            groupBox1.Location = new Point(55, 290);
+            groupBox1.Size = new Size(810, 74);
+
+            label2.Text = "Fecha:";
+            label2.Location = new Point(14, 16);
+            txtFecha.Location = new Point(14, 34);
+            txtFecha.Size = new Size(110, 32);
+
+            label3.Text = "Tipo Doc:";
+            label3.Location = new Point(135, 16);
+            txtTipoDocumento.Location = new Point(135, 34);
+            txtTipoDocumento.Size = new Size(120, 32);
+
+            label6.Text = "Responsable:";
+            label6.Location = new Point(268, 16);
+            txtUsuario.Location = new Point(268, 34);
+            txtUsuario.Size = new Size(165, 32);
+
+            label11.Text = "Proveedor:";
+            label11.Location = new Point(445, 16);
+            txtDocV.Location = new Point(445, 34);
+            txtDocV.Size = new Size(195, 32);
+
+            txtEstado.Location = new Point(655, 34);
+            txtEstado.Size = new Size(140, 32);
+
+            // 2. Crear DataGrid Principal (Maestro - Encabezados Únicos de Compra)
+            lblMaestro = new Label()
+            {
+                AutoSize = true,
+                Text = "1. Listado de Facturas de Compra (Seleccione una fila para ver sus productos):",
+                Location = new Point(55, 106),
+                Font = new System.Drawing.Font("Segoe UI", 9.75F, FontStyle.Bold)
+            };
+
+            dgvFacturas = new DataGridView()
+            {
+                Name = "dgvFacturas",
+                Location = new Point(55, 128),
+                Size = new Size(810, 155),
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                AllowUserToResizeRows = false,
+                ReadOnly = true,
+                MultiSelect = false,
+                RowHeadersVisible = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+            };
+
+            var colSel = new DataGridViewButtonColumn()
+            {
+                Name = "btnseleccionar",
+                HeaderText = "",
+                Width = 36,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            };
+            dgvFacturas.Columns.Add(colSel);
+            dgvFacturas.Columns.Add(new DataGridViewTextBoxColumn() { Name = "IdCompra", HeaderText = "IdCompra", Visible = false });
+            dgvFacturas.Columns.Add(new DataGridViewTextBoxColumn() { Name = "FechaRegistro", HeaderText = "Fecha", FillWeight = 15 });
+            dgvFacturas.Columns.Add(new DataGridViewTextBoxColumn() { Name = "TipoDocumento", HeaderText = "Tipo Doc.", FillWeight = 15 });
+            dgvFacturas.Columns.Add(new DataGridViewTextBoxColumn() { Name = "NumeroDocumento", HeaderText = "N° Compra", FillWeight = 15 });
+            dgvFacturas.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Proveedor", HeaderText = "Proveedor", FillWeight = 22 });
+            dgvFacturas.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Usuario", HeaderText = "Responsable", FillWeight = 20 });
+            dgvFacturas.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Estado", HeaderText = "Estado", FillWeight = 14 });
+            dgvFacturas.Columns.Add(new DataGridViewTextBoxColumn() { Name = "MontoTotal", HeaderText = "Monto Total ($)", FillWeight = 16 });
+
+            dgvFacturas.CellPainting += (s, ev) => TemaCapybara.ModernDgv_CellPainting(s, ev);
+            dgvFacturas.CellClick += DgvFacturas_CellClick;
+            dgvFacturas.SelectionChanged += DgvFacturas_SelectionChanged;
+
+            // 3. Configurar Segunda Tabla Abajo (Detalle de Productos de la Compra Seleccionada)
+            lblDetalle = new Label()
+            {
+                AutoSize = true,
+                Text = "2. Detalle de Productos de la Compra Seleccionada:",
+                Location = new Point(55, 370),
+                Font = new System.Drawing.Font("Segoe UI", 9.75F, FontStyle.Bold)
+            };
+
+            dgvData.Location = new Point(55, 392);
+            dgvData.Size = new Size(810, 130);
+            dgvData.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvData.CellPainting += (s, ev) => TemaCapybara.ModernDgv_CellPainting(s, ev);
+
+            label9.Location = new Point(392, 530);
+            txtTotal.Location = new Point(389, 550);
+            txtTotal.Size = new Size(160, 34);
+
+            BtnGuardar2.Text = "  Ticket PDF";
+            BtnGuardar2.Location = new Point(665, 544);
+            BtnGuardar2.Size = new Size(195, 42);
+
+            this.Controls.Add(lblMaestro);
+            this.Controls.Add(dgvFacturas);
+            this.Controls.Add(lblDetalle);
+            lblMaestro.BringToFront();
+            dgvFacturas.BringToFront();
+            lblDetalle.BringToFront();
+        }
+
+        private void ComboPeriodo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!(comboPeriodo.SelectedItem is OpcionesCombo oc)) return;
+            string val = oc.Valor.ToString();
+            DateTime hoy = DateTime.Now.Date;
+            dtFechaFin.Value = hoy.AddDays(1);
+
+            if (val == "SEMANA")
+                dtFechaInicio.Value = hoy.AddDays(-7);
+            else if (val == "MES")
+                dtFechaInicio.Value = hoy.AddMonths(-1);
+            else if (val == "ANIO")
+                dtFechaInicio.Value = hoy.AddYears(-1);
+            else
+                dtFechaInicio.Value = hoy.AddYears(-3);
+
+            CargarMaestroCompras();
+        }
+
+        private void FrmDetalleCompra_Load(object sender, EventArgs e)
+        {
+            TemaCapybara.AplicarTema(this);
+            rjButton1.Text = "  Buscar";
+            BtnGuardar2.Text = "  Ticket PDF";
+
+            if (!string.IsNullOrWhiteSpace(this.doc))
+            {
+                txtBusqueda.Texts = this.doc;
+            }
+
+            CargarMaestroCompras();
+        }
+
+        private void CargarMaestroCompras()
+        {
+            string filtroNumero = txtBusqueda.Texts != null ? txtBusqueda.Texts.Trim() : "";
+            _listaComprasActual = new CN_Compra().ListarCompras(dtFechaInicio.Value, dtFechaFin.Value, 0, filtroNumero);
+
+            dgvFacturas.Rows.Clear();
+            LimpiarDetalleSeleccionado();
+
+            foreach (Compra c in _listaComprasActual)
+            {
+                dgvFacturas.Rows.Add(new object[]
+                {
+                    "",
+                    c.IdCompra,
+                    c.FechaRegistro,
+                    c.TipoDocumento,
+                    c.NumeroDocumento,
+                    c.oProveedor != null ? c.oProveedor.RazonSocial : "",
+                    c.oUsuario != null ? c.oUsuario.NombreCompleto : "",
+                    c.Estado ? "Recibida" : "En Camino",
+                    c.MontoTotal.ToString("0.00")
+                });
+            }
+
+            dgvFacturas.ClearSelection();
+
+            if (!string.IsNullOrWhiteSpace(filtroNumero) && dgvFacturas.Rows.Count > 0)
+            {
+                dgvFacturas.Rows[0].Selected = true;
+                MostrarDetalleDeFila(0);
+            }
+        }
+
+        private void DgvFacturas_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                MostrarDetalleDeFila(e.RowIndex);
+            }
+        }
+
+        private void DgvFacturas_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dgvFacturas.Focused && dgvFacturas.SelectedRows.Count > 0)
+            {
+                MostrarDetalleDeFila(dgvFacturas.SelectedRows[0].Index);
+            }
+        }
+
+        private void MostrarDetalleDeFila(int rowIndex)
+        {
+            if (rowIndex < 0 || rowIndex >= dgvFacturas.Rows.Count) return;
+
+            string numeroDoc = dgvFacturas.Rows[rowIndex].Cells["NumeroDocumento"].Value?.ToString() ?? "";
+            if (string.IsNullOrWhiteSpace(numeroDoc)) return;
+
+            Compra oCompra = new CN_Compra().obtenerCompra(numeroDoc);
             if (oCompra.IdCompra != 0)
             {
                 txtDocumento.Texts = oCompra.NumeroDocumento;
                 txtFecha.Texts = oCompra.FechaRegistro;
                 txtTipoDocumento.Texts = oCompra.TipoDocumento;
-
                 txtUsuario.Texts = oCompra.oUsuario.NombreCompleto;
-                txtDocV.Texts = oCompra.oUsuario.Documento;
+                txtDocV.Texts = oCompra.oProveedor.RazonSocial;
 
                 txtDocumentoProv.Texts = oCompra.oProveedor.Documento;
                 txtRazon.Texts = oCompra.oProveedor.RazonSocial;
                 txtCorreoP.Texts = oCompra.oProveedor.Correo;
+                txtEstado.Texts = oCompra.Estado ? "Recibida" : "En Camino";
 
-                // Verifica el estado de la compra (En Camino o Recibida)
-                if (oCompra.Estado == false)
-                {
-                    txtEstado.Texts = "En Camino";
-                }
-                else
-                {
-                    txtEstado.Texts = "Recibida";
-                }
-
-                // Limpiar el DataGridView y agregar los detalles de la compra
                 dgvData.Rows.Clear();
                 foreach (DetalleCompra dc in oCompra.oDetalleCompra)
                 {
@@ -76,25 +349,19 @@ namespace CapaPresentacion
                     {
                         dc.oProducto.Nombre,
                         dc.oProducto.Descripcion,
-                        dc.PrecioCompra,
+                        dc.PrecioCompra.ToString("0.00"),
                         dc.Cantidad,
-                        dc.MontoTotal
+                        dc.MontoTotal.ToString("0.00")
                     });
                 }
 
-                // Mostrar el monto total de la compra
                 txtTotal.Texts = oCompra.MontoTotal.ToString("0.00");
-            }
-            else
-            {
-                // Si no se encuentra la compra, se muestra un mensaje de advertencia
-                MessageBox.Show("Debe colocar un numero de compra", "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 
-        // Evento que limpia todos los campos del formulario cuando se hace clic en el botón "Limpiar"
-        private void btnLimpiar_Click(object sender, EventArgs e)
+        private void LimpiarDetalleSeleccionado()
         {
+            txtDocumento.Texts = "";
             txtFecha.Texts = "";
             txtTipoDocumento.Texts = "";
             txtUsuario.Texts = "";
@@ -104,26 +371,40 @@ namespace CapaPresentacion
             txtCorreoP.Texts = "";
             txtEstado.Texts = "";
             txtTotal.Texts = "0.00";
-
-            // Limpiar el DataGridView
             dgvData.Rows.Clear();
         }
 
-        // Evento que genera y descarga un archivo PDF con los detalles de la compra
+        private void btnBuscar_Click(object sender, EventArgs e)
+        {
+            CargarMaestroCompras();
+            if (dgvFacturas.Rows.Count == 0)
+            {
+                MessageBox.Show("No se encontraron compras en el rango de fechas o número indicado.", "Sin resultados", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void btnLimpiar_Click(object sender, EventArgs e)
+        {
+            txtBusqueda.Texts = "";
+            if (comboPeriodo != null && comboPeriodo.Items.Count > 0)
+                comboPeriodo.SelectedIndex = 0;
+            dtFechaInicio.Value = DateTime.Now.AddYears(-2);
+            dtFechaFin.Value = DateTime.Now.AddDays(1);
+            CargarMaestroCompras();
+        }
+
+        // Genera y descarga el Ticket Comprobante de Compra en PDF
         private void btnDescargar_Click(object sender, EventArgs e)
         {
-            // Verifica si hay una compra seleccionada antes de intentar generar el PDF
-            if (txtDocumento.Texts == "")
+            if (string.IsNullOrWhiteSpace(txtDocumento.Texts) || dgvData.Rows.Count == 0)
             {
-                MessageBox.Show("No se encontraron resultados", "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                MessageBox.Show("Seleccione primero una factura en la tabla superior para generar su Ticket de Compra.", "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 return;
             }
 
-            // Cargar la plantilla HTML del PDF desde los recursos
             string Texto_Html = Properties.Resources.PlantillaCompra.ToString();
             Negocio oDatos = new CN_Negocio().obtenerDatos();
 
-            // Reemplazar los marcadores en el HTML con los datos de la compra y del negocio
             Texto_Html = Texto_Html.Replace("@nombrenegocio", oDatos.Nombre.ToUpper());
             Texto_Html = Texto_Html.Replace("@docnegocio", oDatos.RUC);
             Texto_Html = Texto_Html.Replace("@direcnegocio", oDatos.Direccion);
@@ -136,39 +417,32 @@ namespace CapaPresentacion
             Texto_Html = Texto_Html.Replace("@fecharegistro", txtFecha.Texts);
             Texto_Html = Texto_Html.Replace("@usuarioregistro", txtUsuario.Texts);
 
-            // Construir las filas de la tabla con los productos comprados
             string filas = string.Empty;
             foreach (DataGridViewRow row in dgvData.Rows)
             {
                 filas += "<tr>";
                 filas += "<td>" + row.Cells["Producto"].Value.ToString() + "</td>";
-                filas += "<td>" + row.Cells["PrecioCompra"].Value.ToString() + "</td>";
+                filas += "<td>$" + row.Cells["PrecioCompra"].Value.ToString() + "</td>";
                 filas += "<td>" + row.Cells["Cantidad"].Value.ToString() + "</td>";
-                filas += "<td>" + row.Cells["SubTotal"].Value.ToString() + "</td>";
+                filas += "<td>$" + row.Cells["SubTotal"].Value.ToString() + "</td>";
                 filas += "</tr>";
             }
 
-            // Reemplazar las filas y el monto total en el HTML
             Texto_Html = Texto_Html.Replace("@filas", filas);
             Texto_Html = Texto_Html.Replace("@montototal", txtTotal.Texts);
 
-            // Mostrar un cuadro de diálogo para seleccionar la ubicación donde guardar el PDF
             SaveFileDialog savefile = new SaveFileDialog();
-            savefile.FileName = string.Format("Compra_{0}.pdf", txtDocumento.Texts);
+            savefile.FileName = string.Format("Ticket_Compra_{0}.pdf", txtDocumento.Texts);
             savefile.Filter = "Pdf Files | *.pdf";
 
-            // Si el usuario confirma la descarga
             if (savefile.ShowDialog() == DialogResult.OK)
             {
-                // Crear un nuevo archivo PDF
                 using (FileStream stream = new FileStream(savefile.FileName, FileMode.Create))
                 {
                     Document pdfDoc = new Document(PageSize.A4, 25, 25, 25, 25);
-
                     PdfWriter writer = PdfWriter.GetInstance(pdfDoc, stream);
                     pdfDoc.Open();
 
-                    // Obtener y agregar el logo del negocio si está disponible
                     bool obtener = true;
                     byte[] byteImage = new CN_Negocio().obtenerLogo(out obtener);
 
@@ -180,128 +454,55 @@ namespace CapaPresentacion
                         img.SetAbsolutePosition(pdfDoc.Left, pdfDoc.GetTop(51));
                         pdfDoc.Add(img);
                     }
-                  
-                    // Leer el HTML y agregarlo al documento PDF
+
                     using (StringReader sr = new StringReader(Texto_Html))
                     {
                         XMLWorkerHelper.GetInstance().ParseXHtml(writer, pdfDoc, sr);
                     }
 
-                    // Cerrar el documento y el stream
                     pdfDoc.Close();
                     stream.Close();
-                    MessageBox.Show("Pdf Generado", "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Ticket Comprobante de Compra generado correctamente.", "Ticket Generado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    try
+                    {
+                        Process.Start(savefile.FileName);
+                    }
+                    catch { }
                 }
             }
         }
 
-        // Evento que se ejecuta al cargar el formulario, seleccionando el campo de búsqueda
-        private void FrmDetalleCompra_Load(object sender, EventArgs e)
-        {
-            TemaCapybara.AplicarTema(this);
-            txtBusqueda.Select();
-        }
-
-        // Evento que restringe la entrada en el campo de búsqueda a solo números y un máximo de 8 dígitos
         private void txtBusqueda_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Verificar si el carácter es una tecla de control (como Backspace)
             bool esControl = Char.IsControl(e.KeyChar);
-
-            // Verificar si el carácter es un dígito
             bool esDigito = Char.IsDigit(e.KeyChar);
-
-            // Verificar la longitud actual del texto y permitir solo hasta 8 dígitos
-            bool longitudPermitida = txtBusqueda.Texts.Length < 8;
-
-            // Permitir el carácter solo si es una tecla de control o un dígito y la longitud permitida no se ha alcanzado
-            if (esControl || (esDigito && longitudPermitida))
-            {
-                e.Handled = false; // Permitir el carácter
-            }
-            else
-            {
-                e.Handled = true; // Bloquear el carácter
-            }
+            bool longitudPermitida = txtBusqueda.Texts.Length < 10;
+            e.Handled = !(esControl || (esDigito && longitudPermitida));
         }
 
-        // Evento que busca la compra cuando se presiona la tecla Enter
         private void txtBusqueda_KeyDown(object sender, KeyEventArgs e)
         {
-            // Si se presiona la tecla Enter
             if (e.KeyData == Keys.Enter)
             {
-                // Buscar la compra utilizando el número ingresado
-                Compra oCompra = new CN_Compra().obtenerCompra(txtBusqueda.Texts);
-
-                if (oCompra.IdCompra != 0)
-                {
-                    // Si se encuentra la compra, mostrar sus detalles
-                    txtBusqueda.ForeColor = Color.Honeydew;
-                    txtDocumento.Texts = oCompra.NumeroDocumento;
-                    txtFecha.Texts = oCompra.FechaRegistro;
-                    txtTipoDocumento.Texts = oCompra.TipoDocumento;
-
-                    txtUsuario.Texts = oCompra.oUsuario.NombreCompleto;
-                    txtDocV.Texts = oCompra.oUsuario.Documento;
-
-                    txtDocumentoProv.Texts = oCompra.oProveedor.Documento;
-                    txtRazon.Texts = oCompra.oProveedor.RazonSocial;
-                    txtCorreoP.Texts = oCompra.oProveedor.Correo;
-
-                    // Verificar el estado de la compra (En Camino o Recibida)
-                    if (oCompra.Estado == false)
-                    {
-                        txtEstado.Texts = "En Camino";
-                    }
-                    else
-                    {
-                        txtEstado.Texts = "Recibida";
-                    }
-
-                    // Limpiar el DataGridView y agregar los detalles de la compra
-                    dgvData.Rows.Clear();
-                    foreach (DetalleCompra dc in oCompra.oDetalleCompra)
-                    {
-                        dgvData.Rows.Add(new object[]
-                        {
-                            dc.oProducto.Nombre,
-                            dc.oProducto.Descripcion,
-                            dc.PrecioCompra,
-                            dc.Cantidad,
-                            dc.MontoTotal
-                        });
-                    }
-
-                    // Mostrar el monto total de la compra
-                    txtTotal.Texts = oCompra.MontoTotal.ToString("0.00");
-                }
-                else
-                {
-                    // Si no se encuentra la compra, limpiar los campos
-                    txtBusqueda.ForeColor = Color.MistyRose;
-                    btnLimpiar_Click(sender, e);
-                }
+                btnBuscar_Click(sender, e);
             }
         }
 
-        // Evento que valida la compra seleccionada
         private void rjButton2_Click(object sender, EventArgs e)
         {
-            String Mensaje = string.Empty;
-
-            // Verificar si se ha ingresado un número de compra
-            if (txtBusqueda.Texts != "")
+            string docValidar = !string.IsNullOrWhiteSpace(txtDocumento.Texts) ? txtDocumento.Texts : txtBusqueda.Texts;
+            if (!string.IsNullOrWhiteSpace(docValidar))
             {
-                // Validar la compra
-                bool Resultado = new CN_Compra().ValidarCompra(txtBusqueda.Texts, out Mensaje);
+                string Mensaje = string.Empty;
+                bool Resultado = new CN_Compra().ValidarCompra(docValidar, out Mensaje);
                 MessageBox.Show(Mensaje, "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 txtEstado.Texts = "Recibida";
+                CargarMaestroCompras();
             }
             else
             {
-                // Mostrar mensaje de error si no hay ninguna compra para validar
-                MessageBox.Show("No hay ninguna compra para validar", "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                MessageBox.Show("Seleccione primero una compra en la tabla superior para validarla.", "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
     }

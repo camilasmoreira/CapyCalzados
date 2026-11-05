@@ -1,5 +1,6 @@
-﻿using CapaDatos;
+using CapaDatos;
 using CapaEntidad;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
@@ -14,21 +15,29 @@ namespace CapaNegocio
             return objcd_Venta.obtenerCorrelativo();
         }
 
-
         public bool Registrar(Venta obj, DataTable DetalleVenta, out string Mensaje)
         {
-
             return objcd_Venta.Registrar(obj, DetalleVenta, out Mensaje);
-
-
         }
+
         public bool SumarStock(int idProd, int cantidad)
         {
             return objcd_Venta.SumarStock(idProd, cantidad);
         }
+
         public bool RestarStock(int idProd, int cantidad)
         {
             return objcd_Venta.RestarStock(idProd, cantidad);
+        }
+
+        public List<Venta> ListarVentas(DateTime fechaInicio, DateTime fechaFin, string numero = "")
+        {
+            return objcd_Venta.ListarVentas(fechaInicio, fechaFin, numero);
+        }
+
+        public List<DetalleVenta> obtenerDetalleVenta(int idVenta)
+        {
+            return objcd_Venta.obtenerDetalleVenta(idVenta);
         }
 
         public Venta obtenerVenta(string numero)
@@ -38,7 +47,6 @@ namespace CapaNegocio
             if (oVenta.IdVenta != 0)
             {
                 List<DetalleVenta> oDetalleVenta = objcd_Venta.obtenerDetalleVenta(oVenta.IdVenta);
-
                 oVenta.oDetalleVenta = oDetalleVenta;
             }
             return oVenta;

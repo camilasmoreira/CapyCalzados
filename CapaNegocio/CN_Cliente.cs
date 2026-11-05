@@ -1,4 +1,4 @@
-﻿using CapaDatos;
+using CapaDatos;
 using CapaEntidad;
 using System.Collections.Generic;
 
@@ -17,23 +17,32 @@ namespace CapaNegocio
         {
             Mensaje = string.Empty;
 
-            if (obj.Documento == "")
+            if (string.IsNullOrWhiteSpace(obj.NombreCompleto))
+            {
+                obj.NombreCompleto = $"{obj.Nombre} {obj.Apellido}".Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(obj.Documento))
             {
                 Mensaje += "Es Necesario el Documento del Cliente\n";
             }
-            if (obj.NombreCompleto == "")
+            if (string.IsNullOrWhiteSpace(obj.Nombre))
             {
-                Mensaje += "Es Necesario el Nombre de Cliente\n";
+                Mensaje += "Es Necesario el Nombre del Cliente\n";
             }
-            if (obj.Direccion == "")
+            if (string.IsNullOrWhiteSpace(obj.Apellido))
             {
-                Mensaje += "Es Necesario la Direccion del Cliente\n";
+                Mensaje += "Es Necesario el Apellido del Cliente\n";
             }
-            if (obj.Telefono == "")
+            if (string.IsNullOrWhiteSpace(obj.Direccion))
             {
-                Mensaje += "Es Necesario la Clave del Cliente\n";
+                Mensaje += "Es Necesario la Dirección del Cliente\n";
             }
-            if (obj.Correo == "")
+            if (string.IsNullOrWhiteSpace(obj.Telefono))
+            {
+                Mensaje += "Es Necesario el Teléfono del Cliente\n";
+            }
+            if (string.IsNullOrWhiteSpace(obj.Correo))
             {
                 Mensaje += "Es Necesario el Correo del Cliente\n";
             }
@@ -46,30 +55,38 @@ namespace CapaNegocio
             {
                 return objcd_Cliente.Registrar(obj, out Mensaje);
             }
-
         }
 
         public bool Editar(Cliente obj, out string Mensaje)
         {
             Mensaje = string.Empty;
 
-            if (obj.Documento == "")
+            if (string.IsNullOrWhiteSpace(obj.NombreCompleto))
+            {
+                obj.NombreCompleto = $"{obj.Nombre} {obj.Apellido}".Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(obj.Documento))
             {
                 Mensaje += "Es Necesario el Documento del Cliente\n";
             }
-            if (obj.NombreCompleto == "")
+            if (string.IsNullOrWhiteSpace(obj.Nombre))
             {
-                Mensaje += "Es Necesario el Nombre de Cliente\n";
+                Mensaje += "Es Necesario el Nombre del Cliente\n";
             }
-            if (obj.Direccion == "")
+            if (string.IsNullOrWhiteSpace(obj.Apellido))
             {
-                Mensaje += "Es Necesario la Direccion del Cliente\n";
+                Mensaje += "Es Necesario el Apellido del Cliente\n";
             }
-            if (obj.Telefono == "")
+            if (string.IsNullOrWhiteSpace(obj.Direccion))
             {
-                Mensaje += "Es Necesario la Clave del Cliente\n";
+                Mensaje += "Es Necesario la Dirección del Cliente\n";
             }
-            if (obj.Correo == "")
+            if (string.IsNullOrWhiteSpace(obj.Telefono))
+            {
+                Mensaje += "Es Necesario el Teléfono del Cliente\n";
+            }
+            if (string.IsNullOrWhiteSpace(obj.Correo))
             {
                 Mensaje += "Es Necesario el Correo del Cliente\n";
             }

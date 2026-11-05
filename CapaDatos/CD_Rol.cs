@@ -1,4 +1,4 @@
-﻿using CapaEntidad;
+using CapaEntidad;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -18,8 +18,7 @@ namespace CapaDatos
                 try
                 {
                     StringBuilder query = new StringBuilder();
-                    query.AppendLine("select IdRol,Descripcion from Rol");
-
+                    query.AppendLine("SELECT MIN(IdRol) AS IdRol, Descripcion FROM Rol GROUP BY Descripcion ORDER BY MIN(IdRol)");
 
                     SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
                     cmd.CommandType = CommandType.Text;
@@ -34,7 +33,6 @@ namespace CapaDatos
                             {
                                 IdRol = Convert.ToInt32(dr["IdRol"]),
                                 Descripcion = dr["Descripcion"].ToString()
-
                             });
                         }
                     }

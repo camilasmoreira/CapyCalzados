@@ -1,4 +1,4 @@
-﻿using CapaDatos;
+using CapaDatos;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -24,8 +24,34 @@ namespace CapaNegocio
             return obj.Categorias();
         }
 
-        public Grafico DatosFechas(DateTime fechaDesde, DateTime fechaHasta) {
-            return obj.DatosFechas(fechaDesde,fechaHasta);
+        public Grafico DatosFechas(DateTime fechaDesde, DateTime fechaHasta)
+        {
+            return obj.DatosFechas(fechaDesde, fechaHasta);
+        }
+
+        public DataTable ProductosMasVendidos(DateTime fechaDesde, DateTime fechaHasta)
+        {
+            return obj.ProductosMasVendidos(fechaDesde, fechaHasta);
+        }
+
+        public DataTable ProductosMayorRecaudacion(DateTime fechaDesde, DateTime fechaHasta)
+        {
+            return obj.ProductosMayorRecaudacion(fechaDesde, fechaHasta);
+        }
+
+        public DataTable EvolucionVentas(DateTime fechaDesde, DateTime fechaHasta)
+        {
+            return obj.EvolucionVentas(fechaDesde, fechaHasta);
+        }
+
+        public DataTable RankingVendedores(DateTime fechaDesde, DateTime fechaHasta)
+        {
+            return obj.RankingVendedores(fechaDesde, fechaHasta);
+        }
+
+        public DataTable DiasMayorMovimiento(DateTime fechaDesde, DateTime fechaHasta)
+        {
+            return obj.DiasMayorMovimiento(fechaDesde, fechaHasta);
         }
 
         public ArrayList Vendidos()

@@ -1,5 +1,6 @@
-﻿using CapaDatos;
+using CapaDatos;
 using CapaEntidad;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
@@ -16,10 +17,17 @@ namespace CapaNegocio
 
         public bool Registrar(Compra obj, DataTable DetalleCompra, out string Mensaje)
         {
-
             return objcd_compra.Registrar(obj, DetalleCompra, out Mensaje);
+        }
 
+        public List<Compra> ListarCompras(DateTime fechaInicio, DateTime fechaFin, int idProveedor = 0, string numero = "")
+        {
+            return objcd_compra.ListarCompras(fechaInicio, fechaFin, idProveedor, numero);
+        }
 
+        public List<DetalleCompra> obtenerDetalleCompra(int idCompra)
+        {
+            return objcd_compra.obtenerDetalleCompra(idCompra);
         }
 
         public Compra obtenerCompra(string numero)
@@ -29,7 +37,6 @@ namespace CapaNegocio
             if (oCompra.IdCompra != 0)
             {
                 List<DetalleCompra> oDetalleCompra = objcd_compra.obtenerDetalleCompra(oCompra.IdCompra);
-
                 oCompra.oDetalleCompra = oDetalleCompra;
             }
             return oCompra;
@@ -37,10 +44,7 @@ namespace CapaNegocio
 
         public bool ValidarCompra(string numero, out string Mensaje)
         {
-
             Compra oCompra = objcd_compra.obtenerCompra(numero);
-
-
             return objcd_compra.ValidarCompra(oCompra.IdCompra, out Mensaje);
         }
     }

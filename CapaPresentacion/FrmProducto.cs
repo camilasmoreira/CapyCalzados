@@ -16,6 +16,12 @@ namespace CapaPresentacion
         public Inicio Inicio { get; set; }
         private Usuario usuarioActual;
         private ComboBox comboMarca;
+        private ComboBox comboFiltroEstado;
+        private Label lblFiltroEstado;
+
+        private bool EsVendedor =>
+            usuarioActual != null && usuarioActual.oRol != null &&
+            (usuarioActual.oRol.IdRol == 2 || string.Equals(usuarioActual.oRol.Descripcion, "Vendedor", StringComparison.OrdinalIgnoreCase));
 
         // Constructor de la clase FrmProducto
         public FrmProducto(Inicio inicio, Usuario oUsuario = null)
@@ -29,8 +35,6 @@ namespace CapaPresentacion
         // Evento que se ejecuta al cargar el formulario
         private void FrmProducto_Load(object sender, EventArgs e)
         {
-            TemaCapybara.AplicarTema(this);
-
             // Agregar columnas IdProveedor y Proveedor al DataGridView si no existen
             if (!dgvData.Columns.Contains("IdProveedor"))
             {
@@ -71,9 +75,56 @@ namespace CapaPresentacion
             groupBox1.Controls.Add(comboMarca);
             comboMarca.BringToFront();
 
-            // Cargar proveedores/marcas en comboMarca (Nike, Adidas, Otros proveedores + proveedores de BD)
+            // Crear filtro de Estado (Todos / Activos / Productos Inactivos) en la barra de búsqueda
+            lblFiltroEstado = new Label()
+            {
+                AutoSize = true,
+                Text = "Ver:",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Location = new Point(230, 303)
+            };
+            comboFiltroEstado = new ComboBox()
+            {
+                Name = "comboFiltroEstado",
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+                Location = new Point(265, 300),
+                Size = new Size(145, 29)
+            };
+            comboFiltroEstado.Items.Add(new OpcionesCombo() { Valor = -1, Texto = "Todos" });
+            comboFiltroEstado.Items.Add(new OpcionesCombo() { Valor = 1, Texto = "Productos Activos" });
+            comboFiltroEstado.Items.Add(new OpcionesCombo() { Valor = 0, Texto = "Productos Inactivos" });
+            comboFiltroEstado.DisplayMember = "Texto";
+            comboFiltroEstado.ValueMember = "Valor";
+            comboFiltroEstado.SelectedIndex = 0;
+            comboFiltroEstado.SelectedIndexChanged += (s, ev) => AplicarFiltrosTabla();
+
+            // Ajustar posiciones de la barra de búsqueda para incluir el filtro de Productos Inactivos
+            BtnGuardar2.Location = new Point(90, 293);
+            BtnGuardar2.Size = new Size(130, 41);
+            label11.Location = new Point(420, 303);
+            comboBusqueda.Location = new Point(498, 300);
+            comboBusqueda.Size = new Size(105, 29);
+            txtBusqueda.Location = new Point(610, 295);
+            txtBusqueda.Size = new Size(115, 36);
+            rjButton5.Location = new Point(730, 295);
+            rjButton4.Location = new Point(782, 295);
+            label5.Location = new Point(80, 281);
+            label5.Size = new Size(765, 62);
+            dgvData.Location = new Point(80, 355);
+            dgvData.Size = new Size(765, 225);
+
+            this.Controls.Add(lblFiltroEstado);
+            this.Controls.Add(comboFiltroEstado);
+            lblFiltroEstado.BringToFront();
+            comboFiltroEstado.BringToFront();
+
+            TemaCapybara.AplicarTema(this);
+
+            // Cargar proveedores/marcas en comboMarca (Solo Nike y Adidas)
             List<Proveedor> listaProveedores = new CN_Proveedor().Listar().Where(p => p.Estado == true).ToList();
-            var marcasBase = new List<string> { "Nike", "Adidas", "Otros proveedores" };
+            var marcasBase = new List<string> { "Nike", "Adidas" };
             foreach (string marcaNombre in marcasBase)
             {
                 var prov = listaProveedores.FirstOrDefault(p => p.RazonSocial.Equals(marcaNombre, StringComparison.OrdinalIgnoreCase));
@@ -112,14 +163,15 @@ namespace CapaPresentacion
             };
 
             // Inicializa el comboEstado con opciones "Activo" y "No Activo"
+            comboEstado.Items.Clear();
             comboEstado.Items.Add(new OpcionesCombo() { Valor = 1, Texto = "Activo" });
             comboEstado.Items.Add(new OpcionesCombo() { Valor = 0, Texto = "No Activo" });
-
             comboEstado.DisplayMember = "Texto";
             comboEstado.ValueMember = "Valor";
-            comboEstado.SelectedIndex = 0; // Selecciona "Activo" por defecto
+            comboEstado.SelectedIndex = 0;
 
             // Carga SOLO las categorías Zapatillas Urbanas y Zapatillas Deportivas
+            comboCategoria.Items.Clear();
             List<Categoria> listaCategoria = new CN_Categoria().Listar()
                 .Where(p => p.Estado == true &&
                        (p.Descripcion.Equals("Zapatillas Urbanas", StringComparison.OrdinalIgnoreCase) ||
@@ -135,7 +187,6 @@ namespace CapaPresentacion
             }
             else
             {
-                // Si aún no están filtradas, cargar las activas
                 foreach (Categoria item in new CN_Categoria().Listar().Where(p => p.Estado == true))
                 {
                     comboCategoria.Items.Add(new OpcionesCombo() { Valor = item.IdCategoria, Texto = item.Descripcion });
@@ -150,6 +201,7 @@ namespace CapaPresentacion
             }
 
             // Inicializa el comboBusqueda con las columnas visibles del DataGridView
+            comboBusqueda.Items.Clear();
             foreach (DataGridViewColumn columna in dgvData.Columns)
             {
                 if (columna.Visible == true && columna.Name != "btnseleccionar")
@@ -159,9 +211,42 @@ namespace CapaPresentacion
             }
             comboBusqueda.DisplayMember = "Texto";
             comboBusqueda.ValueMember = "Valor";
-            comboBusqueda.SelectedIndex = 0;
+            if (comboBusqueda.Items.Count > 0)
+                comboBusqueda.SelectedIndex = 0;
 
-            // Muestra los productos en el DataGridView incluyendo su Proveedor
+            CargarProductosTabla();
+
+            // Si el usuario es Vendedor (IdRol == 2), solo puede visualizar productos
+            if (EsVendedor)
+            {
+                groupBox1.Visible = false;
+                rjButton1.Visible = false;    // Botón Guardar (+)
+                BtnEliminar2.Visible = false; // Botón Eliminar
+                BtnLimpiar2.Visible = false;  // Botón Limpiar
+                if (dgvData.Columns.Contains("btnseleccionar"))
+                {
+                    dgvData.Columns["btnseleccionar"].Visible = false;
+                }
+
+                // Ajustar la vista de búsqueda y tabla para modo solo visualización
+                label5.Location = new Point(80, 45);
+                BtnGuardar2.Location = new Point(90, 55);
+                lblFiltroEstado.Location = new Point(230, 67);
+                comboFiltroEstado.Location = new Point(265, 64);
+                label11.Location = new Point(420, 67);
+                comboBusqueda.Location = new Point(498, 64);
+                txtBusqueda.Location = new Point(610, 60);
+                rjButton5.Location = new Point(730, 60);
+                rjButton4.Location = new Point(782, 60);
+
+                dgvData.Location = new Point(80, 125);
+                dgvData.Size = new Size(765, 455);
+            }
+        }
+
+        private void CargarProductosTabla()
+        {
+            dgvData.Rows.Clear();
             List<Producto> listaProductos = new CN_Producto().Listar();
             foreach (Producto item in listaProductos)
             {
@@ -185,33 +270,40 @@ namespace CapaPresentacion
                     item.PrecioCompra,
                     item.PrecioVenta,
                     item.Estado == true ? 1 : 0,
-                    item.Estado == true ? "Activo": "No Activo"
+                    item.Estado == true ? "Activo" : "No Activo"
                 });
             }
+            AplicarFiltrosTabla();
+        }
 
-            // Si el usuario es Vendedor (IdRol != 1), solo puede visualizar productos
-            if (usuarioActual != null && usuarioActual.oRol != null && usuarioActual.oRol.IdRol != 1)
+        private void AplicarFiltrosTabla()
+        {
+            if (dgvData.Rows.Count == 0) return;
+
+            int filtroEstado = -1;
+            if (comboFiltroEstado != null && comboFiltroEstado.SelectedItem is OpcionesCombo ocEst)
             {
-                groupBox1.Visible = false;
-                rjButton1.Visible = false;    // Botón Guardar (+)
-                BtnEliminar2.Visible = false; // Botón Eliminar
-                BtnLimpiar2.Visible = false;  // Botón Limpiar
-                if (dgvData.Columns.Contains("btnseleccionar"))
+                filtroEstado = Convert.ToInt32(ocEst.Valor);
+            }
+
+            string columnaFiltro = (comboBusqueda != null && comboBusqueda.SelectedItem is OpcionesCombo ocCol)
+                ? ocCol.Valor.ToString()
+                : "";
+            string textoBusq = txtBusqueda != null ? txtBusqueda.Texts.Trim().ToUpper() : "";
+
+            foreach (DataGridViewRow row in dgvData.Rows)
+            {
+                int estadoFila = Convert.ToInt32(row.Cells["EstadoValor"].Value ?? 1);
+                bool cumpleEstado = (filtroEstado == -1) || (estadoFila == filtroEstado);
+
+                bool cumpleTexto = true;
+                if (!string.IsNullOrEmpty(textoBusq) && !string.IsNullOrEmpty(columnaFiltro) && dgvData.Columns.Contains(columnaFiltro))
                 {
-                    dgvData.Columns["btnseleccionar"].Visible = false;
+                    string val = row.Cells[columnaFiltro].Value?.ToString() ?? "";
+                    cumpleTexto = val.Trim().ToUpper().Contains(textoBusq);
                 }
 
-                // Ajustar la vista de búsqueda y tabla para modo solo visualización
-                label5.Location = new Point(label5.Location.X, 45);
-                BtnGuardar2.Location = new Point(BtnGuardar2.Location.X, 51);
-                label11.Location = new Point(label11.Location.X, 67);
-                comboBusqueda.Location = new Point(comboBusqueda.Location.X, 64);
-                txtBusqueda.Location = new Point(txtBusqueda.Location.X, 60);
-                rjButton5.Location = new Point(rjButton5.Location.X, 60);
-                rjButton4.Location = new Point(rjButton4.Location.X, 60);
-
-                dgvData.Location = new Point(dgvData.Location.X, 125);
-                dgvData.Size = new Size(dgvData.Size.Width, 455);
+                row.Visible = cumpleEstado && cumpleTexto;
             }
         }
 
@@ -225,7 +317,6 @@ namespace CapaPresentacion
                 txtMarca.Texts = selMarca.Texto;
             }
 
-            // Comprueba que los campos requeridos no estén vacíos
             if (txtCodigo.Texts == "") { validaciones = false; }
             if (txtNombre.Texts == "") { validaciones = false; }
             if (txtDescripcion.Texts == "") { validaciones = false; }
@@ -237,19 +328,17 @@ namespace CapaPresentacion
         // Evento que se ejecuta al hacer clic en el botón "Guardar"
         private void btnGuardar_Click(object sender, EventArgs e)
         {
-            if (usuarioActual != null && usuarioActual.oRol != null && usuarioActual.oRol.IdRol != 1)
+            if (EsVendedor)
             {
                 MessageBox.Show("El vendedor solo tiene permiso para visualizar productos.", "Acceso restringido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Verifica si todos los campos son válidos
             if (Validaciones())
             {
                 string mensaje = string.Empty;
                 DialogResult confirmacion;
 
-                // Pregunta al usuario si desea agregar o editar el producto
                 if (Convert.ToInt32(txtid.Text) == 0)
                 {
                     confirmacion = MessageBox.Show("¿Seguro desea agregar el producto?", "Confirmacion", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -259,14 +348,12 @@ namespace CapaPresentacion
                     confirmacion = MessageBox.Show("¿Seguro desea editar el producto?", "Confirmacion", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 }
 
-                // Si el usuario confirma la acción
                 if (confirmacion == DialogResult.Yes)
                 {
                     OpcionesCombo marcaSeleccionada = (OpcionesCombo)comboMarca.SelectedItem;
                     int idProveedorSel = marcaSeleccionada != null ? Convert.ToInt32(marcaSeleccionada.Valor) : 0;
                     string textoMarcaProv = marcaSeleccionada != null ? marcaSeleccionada.Texto : txtMarca.Texts;
 
-                    // Crea un nuevo objeto Producto
                     Producto objProducto = new Producto()
                     {
                         IdProducto = Convert.ToInt32(txtid.Text),
@@ -276,17 +363,14 @@ namespace CapaPresentacion
                         Marca = textoMarcaProv,
                         oCategoria = new Categoria() { IdCategoria = Convert.ToInt32(((OpcionesCombo)comboCategoria.SelectedItem).Valor) },
                         oProveedor = new Proveedor() { IdProveedor = idProveedorSel, RazonSocial = textoMarcaProv },
-                        Estado = Convert.ToInt32(((OpcionesCombo)comboEstado.SelectedItem).Valor) == 1 ? true : false
+                        Estado = Convert.ToInt32(((OpcionesCombo)comboEstado.SelectedItem).Valor) == 1
                     };
 
-                    // Si es un nuevo producto
                     if (objProducto.IdProducto == 0)
                     {
-                        // Intenta registrar el producto
                         int idProductoGenerado = new CN_Producto().Registrar(objProducto, out mensaje);
                         if (idProductoGenerado != 0)
                         {
-                            // Agrega el nuevo producto al DataGridView
                             dgvData.Rows.Add(new object[] {
                                 "",
                                 idProductoGenerado,
@@ -305,21 +389,19 @@ namespace CapaPresentacion
                                 ((OpcionesCombo)comboEstado.SelectedItem).Texto.ToString()
                             });
 
-                            LimpiarCampos(); // Limpia los campos del formulario
+                            AplicarFiltrosTabla();
+                            LimpiarCampos();
                         }
                         else
                         {
-                            // Muestra un mensaje de error si no se pudo registrar
                             MessageBox.Show(mensaje);
                         }
                     }
                     else
                     {
-                        // Si se está editando un producto existente
                         bool resultado = new CN_Producto().Editar(objProducto, out mensaje);
                         if (resultado == true)
                         {
-                            // Actualiza la fila correspondiente en el DataGridView
                             DataGridViewRow row = dgvData.Rows[Convert.ToInt32(txtindice.Text)];
                             row.Cells["IdProducto"].Value = txtid.Text;
                             row.Cells["Codigo"].Value = txtCodigo.Texts;
@@ -333,11 +415,11 @@ namespace CapaPresentacion
                             row.Cells["EstadoValor"].Value = ((OpcionesCombo)comboEstado.SelectedItem).Valor.ToString();
                             row.Cells["Estado"].Value = ((OpcionesCombo)comboEstado.SelectedItem).Texto.ToString();
 
-                            LimpiarCampos(); // Limpia los campos del formulario
+                            AplicarFiltrosTabla();
+                            LimpiarCampos();
                         }
                         else
                         {
-                            // Muestra un mensaje de error si no se pudo editar
                             MessageBox.Show(mensaje);
                         }
                     }
@@ -345,31 +427,27 @@ namespace CapaPresentacion
             }
             else
             {
-                // Muestra un mensaje de alerta si no se completaron todos los campos
                 MessageBox.Show("Debe Completar todos los campos", "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 
-        // Evento que se ejecuta al hacer clic en el botón "Limpiar"
         private void btnLimpiar_Click(object sender, EventArgs e)
         {
-            LimpiarCampos(); // Limpia los campos del formulario
+            LimpiarCampos();
         }
 
-        // Evento que se ejecuta al hacer clic en el botón "Eliminar"
+        // Evento que se ejecuta al hacer clic en el botón "Eliminar" (da de baja lógica el producto activo)
         private void btnEliminar_Click(object sender, EventArgs e)
         {
-            if (usuarioActual != null && usuarioActual.oRol != null && usuarioActual.oRol.IdRol != 1)
+            if (EsVendedor)
             {
                 MessageBox.Show("El vendedor solo tiene permiso para visualizar productos.", "Acceso restringido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Verifica si se ha seleccionado un producto
             if (Convert.ToInt32(txtid.Text) != 0)
             {
-                // Pregunta al usuario si desea eliminar el producto
-                if (MessageBox.Show("¿Desea eliminar el Producto?", "Mensaje", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                if (MessageBox.Show("¿Desea desactivar (pasar a Productos Inactivos) este producto?", "Mensaje", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
                     string mensaje = string.Empty;
                     Producto objProducto = new Producto()
@@ -377,26 +455,23 @@ namespace CapaPresentacion
                         IdProducto = Convert.ToInt32(txtid.Text),
                     };
 
-                    // Intenta eliminar el producto
                     bool respuesta = new CN_Producto().Eliminar(objProducto, out mensaje);
                     if (respuesta)
                     {
-                        // Cambia el estado del producto a "No Activo" en el DataGridView
                         dgvData.Rows[Convert.ToInt32(txtindice.Text)].Cells["EstadoValor"].Value = 0;
                         dgvData.Rows[Convert.ToInt32(txtindice.Text)].Cells["Estado"].Value = "No Activo";
 
-                        LimpiarCampos(); // Limpia los campos del formulario
+                        AplicarFiltrosTabla();
+                        LimpiarCampos();
                     }
                     else
                     {
-                        // Muestra un mensaje de error si no se pudo eliminar
                         MessageBox.Show(mensaje, "Alerta", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
                 }
             }
         }
 
-        // Método para limpiar los campos del formulario
         private void LimpiarCampos()
         {
             txtindice.Text = "-1";
@@ -417,20 +492,17 @@ namespace CapaPresentacion
                 comboCategoria.SelectedIndex = 0;
             if (comboEstado.Items.Count > 0)
                 comboEstado.SelectedIndex = 0;
-            txtCodigo.Select(); // Enfoca el campo Codigo
+            txtCodigo.Select();
         }
 
-        // Evento que se ejecuta al hacer clic en el DataGridView
         private void dgvData_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            // Comprueba si se ha hecho clic en el botón de selección
             if (e.ColumnIndex >= 0 && dgvData.Columns[e.ColumnIndex].Name == "btnseleccionar")
             {
                 int indice = e.RowIndex;
 
                 if (indice >= 0)
                 {
-                    // Rellena los campos del formulario con los datos del producto seleccionado
                     txtindice.Text = indice.ToString();
                     txtid.Text = dgvData.Rows[indice].Cells["IdProducto"].Value.ToString();
                     txtCodigo.Texts = dgvData.Rows[indice].Cells["Codigo"].Value.ToString();
@@ -438,7 +510,6 @@ namespace CapaPresentacion
                     txtDescripcion.Texts = dgvData.Rows[indice].Cells["Descripcion"].Value.ToString();
                     txtMarca.Texts = dgvData.Rows[indice].Cells["Marca"].Value.ToString();
 
-                    // Selecciona la marca/proveedor correspondiente en comboMarca
                     if (comboMarca != null)
                     {
                         string marcaFila = dgvData.Rows[indice].Cells["Marca"].Value.ToString();
@@ -459,7 +530,6 @@ namespace CapaPresentacion
                         }
                         if (!encontrado && comboMarca.Items.Count > 0)
                         {
-                            // Seleccionar "Otros proveedores" por defecto si no coincide con Nike/Adidas
                             foreach (OpcionesCombo oc in comboMarca.Items)
                             {
                                 if (oc.Texto.IndexOf("Otros", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -471,24 +541,20 @@ namespace CapaPresentacion
                         }
                     }
 
-                    // Selecciona la categoría correspondiente en el comboCategoria
                     foreach (OpcionesCombo oc in comboCategoria.Items)
                     {
                         if (Convert.ToInt32(oc.Valor) == Convert.ToInt32(dgvData.Rows[indice].Cells["IdCategoria"].Value))
                         {
-                            int indiceCombo = comboCategoria.Items.IndexOf(oc);
-                            comboCategoria.SelectedIndex = indiceCombo;
+                            comboCategoria.SelectedIndex = comboCategoria.Items.IndexOf(oc);
                             break;
                         }
                     }
 
-                    // Selecciona el estado correspondiente en el comboEstado
                     foreach (OpcionesCombo oc in comboEstado.Items)
                     {
                         if (Convert.ToInt32(oc.Valor) == Convert.ToInt32(dgvData.Rows[indice].Cells["EstadoValor"].Value))
                         {
-                            int indiceCombo = comboEstado.Items.IndexOf(oc);
-                            comboEstado.SelectedIndex = indiceCombo;
+                            comboEstado.SelectedIndex = comboEstado.Items.IndexOf(oc);
                             break;
                         }
                     }
@@ -496,66 +562,41 @@ namespace CapaPresentacion
             }
         }
 
-        // Evento que se ejecuta al pintar celdas en el DataGridView
         private void dgvData_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
             TemaCapybara.ModernDgv_CellPainting(sender, e);
         }
 
-        // Evento que se ejecuta al hacer clic en el botón de búsqueda
         private void iconButton1_Click(object sender, EventArgs e)
         {
-            string columnaFiltro = ((OpcionesCombo)comboBusqueda.SelectedItem).Valor.ToString();
-
-            // Filtra las filas según el texto ingresado en txtBusqueda
-            if (dgvData.Rows.Count > 0)
-            {
-                foreach (DataGridViewRow row in dgvData.Rows)
-                {
-                    if (row.Cells[columnaFiltro].Value != null &&
-                        row.Cells[columnaFiltro].Value.ToString().Trim().ToUpper().Contains(txtBusqueda.Texts.Trim().ToUpper()))
-                    {
-                        row.Visible = true; // Muestra la fila si coincide
-                    }
-                    else
-                    {
-                        row.Visible = false; // Oculta la fila si no coincide
-                    }
-                }
-            }
+            AplicarFiltrosTabla();
         }
 
-        // Evento que se ejecuta al hacer clic en el botón de limpiar búsqueda
         private void btnLimpiarBusqueda_Click_1(object sender, EventArgs e)
         {
-            txtBusqueda.Texts = ""; // Limpia el campo de búsqueda
-            foreach (DataGridViewRow row in dgvData.Rows)
-            {
-                row.Visible = true; // Muestra todas las filas
-            }
+            txtBusqueda.Texts = "";
+            if (comboFiltroEstado != null && comboFiltroEstado.Items.Count > 0)
+                comboFiltroEstado.SelectedIndex = 0;
+            AplicarFiltrosTabla();
         }
 
-        // Evento que se ejecuta al hacer clic en el botón de exportar a Excel
         private void btnExportar_Click(object sender, EventArgs e)
         {
-            // Comprueba si hay filas para exportar
             if (dgvData.Rows.Count < 1)
             {
                 MessageBox.Show("No hay datos para exportar", "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
             else
             {
-                // Crea un DataTable para almacenar los datos a exportar
                 DataTable dt = new DataTable();
                 foreach (DataGridViewColumn colum in dgvData.Columns)
                 {
                     if (colum.HeaderText != "" && colum.Visible)
                     {
-                        dt.Columns.Add(colum.HeaderText, typeof(string)); // Agrega las columnas visibles
+                        dt.Columns.Add(colum.HeaderText, typeof(string));
                     }
                 }
 
-                // Agrega las filas visibles al DataTable
                 foreach (DataGridViewRow rows in dgvData.Rows)
                 {
                     if (rows.Visible)
@@ -572,26 +613,22 @@ namespace CapaPresentacion
                     }
                 }
 
-                // Muestra un cuadro de diálogo para guardar el archivo
                 SaveFileDialog savefile = new SaveFileDialog();
                 savefile.FileName = string.Format("ReporteProducto_{0}.xlsx", DateTime.Now.ToString("ddMMyyyyHHmmss"));
                 savefile.Filter = "Excel Files | *.xlsx";
 
-                // Si el usuario selecciona un archivo para guardar
                 if (savefile.ShowDialog() == DialogResult.OK)
                 {
                     try
                     {
-                        // Crea un nuevo libro de Excel y guarda los datos
                         XLWorkbook wb = new XLWorkbook();
                         var hoja = wb.Worksheets.Add(dt, "Informe");
-                        hoja.ColumnsUsed().AdjustToContents(); // Ajusta las columnas al contenido
-                        wb.SaveAs(savefile.FileName); // Guarda el libro de Excel
+                        hoja.ColumnsUsed().AdjustToContents();
+                        wb.SaveAs(savefile.FileName);
                         MessageBox.Show("Reporte Generado", "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch
                     {
-                        // Muestra un mensaje de error si ocurre un problema al guardar
                         MessageBox.Show("Error al generar el informe", "Mensaje", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
                 }
@@ -600,65 +637,24 @@ namespace CapaPresentacion
 
         private void txtNombre_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Verificar si el carácter es una tecla de control (como Backspace)
             bool esControl = Char.IsControl(e.KeyChar);
-
-            // Verificar si el carácter es un dígito
-            bool esDigito = Char.IsDigit(e.KeyChar);
-
-            // Verificar la longitud actual del texto y permitir solo hasta 80 caracteres
             bool longitudPermitida = txtNombre.Texts.Length < 80;
-
-            // Permitir el carácter solo si es una tecla de control o no es dígito y la longitud permitida no se ha alcanzado
-            if (esControl || (!esDigito && longitudPermitida))
-            {
-                e.Handled = false; // Permitir el carácter
-            }
-            else
-            {
-                e.Handled = true; // Bloquear el carácter
-            }
+            e.Handled = !(esControl || longitudPermitida);
         }
 
         private void txtDescripcion_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Verificar si el carácter es una tecla de control (como Backspace)
             bool esControl = Char.IsControl(e.KeyChar);
-
-            // Verificar la longitud actual del texto y permitir solo hasta 100 caracteres
             bool longitudPermitida = txtDescripcion.Texts.Length < 100;
-
-            // Permitir el carácter solo si es una tecla de control o la longitud permitida no se ha alcanzado
-            if (esControl || longitudPermitida)
-            {
-                e.Handled = false; // Permitir el carácter
-            }
-            else
-            {
-                e.Handled = true; // Bloquear el carácter
-            }
+            e.Handled = !(esControl || longitudPermitida);
         }
 
         private void txtCodigo_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Verificar si el carácter es una tecla de control (como Backspace)
             bool esControl = Char.IsControl(e.KeyChar);
-
-            // Verificar si el carácter es un dígito
             bool esDigito = Char.IsDigit(e.KeyChar);
-
-            // Verificar la longitud actual del texto y permitir solo hasta 100 dígitos
             bool longitudPermitida = txtCodigo.Texts.Length < 100;
-
-            // Permitir el carácter solo si es una tecla de control o un dígito y la longitud permitida no se ha alcanzado
-            if (esControl || (esDigito && longitudPermitida))
-            {
-                e.Handled = false; // Permitir el carácter
-            }
-            else
-            {
-                e.Handled = true; // Bloquear el carácter
-            }
+            e.Handled = !(esControl || (esDigito && longitudPermitida));
         }
 
         private void txtNombre__TextChanged(object sender, EventArgs e)
@@ -668,53 +664,27 @@ namespace CapaPresentacion
 
         private void txtMarca_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Verificar si el carácter es una tecla de control (como Backspace)
             bool esControl = Char.IsControl(e.KeyChar);
-
-            // Verificar si el carácter es un dígito
             bool esDigito = Char.IsDigit(e.KeyChar);
-
-            // Verificar la longitud actual del texto y permitir solo hasta 80 caracteres
             bool longitudPermitida = txtMarca.Texts.Length < 80;
-
-            // Permitir el carácter solo si es una tecla de control o no es dígito y la longitud permitida no se ha alcanzado
-            if (esControl || (!esDigito && longitudPermitida))
-            {
-                e.Handled = false; // Permitir el carácter
-            }
-            else
-            {
-                e.Handled = true; // Bloquear el carácter
-            }
+            e.Handled = !(esControl || (!esDigito && longitudPermitida));
         }
 
         private void txtBusqueda_KeyPress(object sender, KeyPressEventArgs e)
         {
-            // Verificar si el carácter es una tecla de control (como Backspace)
             bool esControl = Char.IsControl(e.KeyChar);
-
-            // Verificar la longitud actual del texto y permitir solo hasta 80 caracteres
             bool longitudPermitida = txtBusqueda.Texts.Length < 80;
-
-            // Permitir el carácter solo si es una tecla de control o un caracter y la longitud permitida no se ha alcanzado
-            if (esControl || longitudPermitida)
-            {
-                e.Handled = false; // Permitir el carácter
-            }
-            else
-            {
-                e.Handled = true; // Bloquear el carácter
-            }
+            e.Handled = !(esControl || longitudPermitida);
         }
 
         private void dgvData_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (this.dgvData.Columns[e.ColumnIndex].Name == "Estado") // Verifica la columna "Estado"
+            if (this.dgvData.Columns[e.ColumnIndex].Name == "Estado")
             {
-                if (e.Value != null && e.Value.ToString() == "No Activo") // Si el estado es "No Activo"
+                if (e.Value != null && e.Value.ToString() == "No Activo")
                 {
-                    e.CellStyle.BackColor = Color.Red; // Cambia el color de fondo a rojo
-                    e.CellStyle.ForeColor = Color.Black; // Cambia el color de texto a negro
+                    e.CellStyle.BackColor = Color.Red;
+                    e.CellStyle.ForeColor = Color.Black;
                 }
             }
         }

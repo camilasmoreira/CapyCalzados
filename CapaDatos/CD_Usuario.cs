@@ -9,7 +9,6 @@ namespace CapaDatos
 {
     public class CD_Usuario
     {
-
         public List<Usuario> Listar()
         {
             List<Usuario> lista = new List<Usuario>();
@@ -18,9 +17,8 @@ namespace CapaDatos
             {
                 try
                 {
-
                     StringBuilder query = new StringBuilder();
-                    query.AppendLine("select u.IdUsuario, u.Documento, u.NombreCompleto,u.Correo,u.Clave,u.Estado,r.IdRol,r.Descripcion from usuario u");
+                    query.AppendLine("select u.IdUsuario, u.Documento, ISNULL(u.Nombre,'') AS Nombre, ISNULL(u.Apellido,'') AS Apellido, u.NombreCompleto, ISNULL(u.Direccion,'') AS Direccion, ISNULL(u.Telefono,'') AS Telefono, u.Correo, u.Clave, u.Estado, r.IdRol, r.Descripcion from usuario u");
                     query.AppendLine("inner join Rol r on r.IdRol = u.IdRol");
                     SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
 
@@ -31,11 +29,25 @@ namespace CapaDatos
                     {
                         while (dr.Read())
                         {
+                            string nombre = dr["Nombre"].ToString();
+                            string apellido = dr["Apellido"].ToString();
+                            string nombreCompleto = dr["NombreCompleto"].ToString();
+                            if (string.IsNullOrWhiteSpace(nombre) && !string.IsNullOrWhiteSpace(nombreCompleto))
+                            {
+                                var parts = nombreCompleto.Trim().Split(new[] { ' ' }, 2);
+                                nombre = parts[0];
+                                apellido = parts.Length > 1 ? parts[1] : "";
+                            }
+
                             lista.Add(new Usuario()
                             {
                                 IdUsuario = Convert.ToInt32(dr["IdUsuario"]),
                                 Documento = dr["Documento"].ToString(),
-                                NombreCompleto = dr["NombreCompleto"].ToString(),
+                                Nombre = nombre,
+                                Apellido = apellido,
+                                NombreCompleto = nombreCompleto,
+                                Direccion = dr["Direccion"].ToString(),
+                                Telefono = dr["Telefono"].ToString(),
                                 Correo = dr["Correo"].ToString(),
                                 Clave = dr["Clave"].ToString(),
                                 Estado = Convert.ToBoolean(dr["Estado"]),
@@ -43,7 +55,6 @@ namespace CapaDatos
                             });
                         }
                     }
-
                 }
                 catch (Exception ex)
                 {
@@ -62,25 +73,17 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cadena))
                 {
-
-                    //                    create PROC SP_REGISTRARUSUARIO(
-                    //@Documento varchar(50),
-                    //@NombreCompleto varchar(100),
-                    //@Correo varchar(100),
-                    //@Clave varchar(80),
-                    //@IdRol int,
-                    //@Estado bit,
-                    //@IdUsuarioResultado int output,
-                    //@Mensaje varchar(500) output
-                    //)
-                    //as
                     SqlCommand cmd = new SqlCommand("SP_REGISTRARUSUARIO", oconexion);
                     cmd.Parameters.AddWithValue("Documento", obj.Documento);
-                    cmd.Parameters.AddWithValue("NombreCompleto", obj.NombreCompleto);
+                    cmd.Parameters.AddWithValue("NombreCompleto", !string.IsNullOrWhiteSpace(obj.NombreCompleto) ? obj.NombreCompleto : $"{obj.Nombre} {obj.Apellido}".Trim());
                     cmd.Parameters.AddWithValue("Correo", obj.Correo);
                     cmd.Parameters.AddWithValue("Clave", obj.Clave);
                     cmd.Parameters.AddWithValue("IdRol", obj.oRol.IdRol);
                     cmd.Parameters.AddWithValue("Estado", obj.Estado);
+                    cmd.Parameters.AddWithValue("Nombre", obj.Nombre ?? "");
+                    cmd.Parameters.AddWithValue("Apellido", obj.Apellido ?? "");
+                    cmd.Parameters.AddWithValue("Direccion", obj.Direccion ?? "");
+                    cmd.Parameters.AddWithValue("Telefono", obj.Telefono ?? "");
                     cmd.Parameters.Add("IdUsuarioResultado", SqlDbType.Int).Direction = ParameterDirection.Output;
                     cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -91,9 +94,7 @@ namespace CapaDatos
 
                     IdUsuarioGenerado = Convert.ToInt32(cmd.Parameters["IdUsuarioResultado"].Value);
                     Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -102,7 +103,6 @@ namespace CapaDatos
             }
 
             return IdUsuarioGenerado;
-
         }
 
         public bool Editar(Usuario obj, out string Mensaje)
@@ -114,16 +114,18 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cadena))
                 {
-
-
                     SqlCommand cmd = new SqlCommand("SP_EDITARUSUARIO", oconexion);
                     cmd.Parameters.AddWithValue("IdUsuario", obj.IdUsuario);
                     cmd.Parameters.AddWithValue("Documento", obj.Documento);
-                    cmd.Parameters.AddWithValue("NombreCompleto", obj.NombreCompleto);
+                    cmd.Parameters.AddWithValue("NombreCompleto", !string.IsNullOrWhiteSpace(obj.NombreCompleto) ? obj.NombreCompleto : $"{obj.Nombre} {obj.Apellido}".Trim());
                     cmd.Parameters.AddWithValue("Correo", obj.Correo);
                     cmd.Parameters.AddWithValue("Clave", obj.Clave);
                     cmd.Parameters.AddWithValue("IdRol", obj.oRol.IdRol);
                     cmd.Parameters.AddWithValue("Estado", obj.Estado);
+                    cmd.Parameters.AddWithValue("Nombre", obj.Nombre ?? "");
+                    cmd.Parameters.AddWithValue("Apellido", obj.Apellido ?? "");
+                    cmd.Parameters.AddWithValue("Direccion", obj.Direccion ?? "");
+                    cmd.Parameters.AddWithValue("Telefono", obj.Telefono ?? "");
                     cmd.Parameters.Add("Respuesta", SqlDbType.Int).Direction = ParameterDirection.Output;
                     cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -134,9 +136,7 @@ namespace CapaDatos
 
                     Respuesta = Convert.ToBoolean(cmd.Parameters["Respuesta"].Value);
                     Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -145,7 +145,6 @@ namespace CapaDatos
             }
 
             return Respuesta;
-
         }
 
         public bool Eliminar(Usuario obj, out string Mensaje)
@@ -157,8 +156,6 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cadena))
                 {
-
-
                     SqlCommand cmd = new SqlCommand("SP_ELIMINARUSUARIO", oconexion);
                     cmd.Parameters.AddWithValue("IdUsuario", obj.IdUsuario);
                     cmd.Parameters.Add("Respuesta", SqlDbType.Int).Direction = ParameterDirection.Output;
@@ -171,9 +168,7 @@ namespace CapaDatos
 
                     Respuesta = Convert.ToBoolean(cmd.Parameters["Respuesta"].Value);
                     Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -182,8 +177,6 @@ namespace CapaDatos
             }
 
             return Respuesta;
-
         }
-
     }
 }

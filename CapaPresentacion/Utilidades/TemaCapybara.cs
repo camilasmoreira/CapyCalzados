@@ -341,13 +341,14 @@ namespace CapaPresentacion.Utilidades
                     return;
                 }
 
-                // 2. Reportes: Exportar y Buscar
-                if (frmName.StartsWith("FrmReporte"))
+                // 2. Reportes y Detalle de Ventas/Compras: Exportar/Ticket y Buscar
+                if (frmName.StartsWith("FrmReporte") || frmName.StartsWith("FrmDetalle"))
                 {
-                    if (nombre == "btnguardar2" || nombre.Contains("exportar"))
+                    if (nombre == "btnguardar2" || nombre.Contains("exportar") || texto.Contains("ticket") || texto.Contains("pdf"))
                     {
-                        btn.Text = "  Descargar Excel";
-                        btn.Image = IconChar.FileExcel.ToBitmap(BotonTexto, 16);
+                        bool esDetalle = frmName.StartsWith("FrmDetalle");
+                        btn.Text = esDetalle ? "  Ticket PDF" : "  Descargar Excel";
+                        btn.Image = (esDetalle ? IconChar.FilePdf : IconChar.FileExcel).ToBitmap(BotonTexto, 16);
                         btn.BackColor = BotonPasto;
                         btn.BackgroundColor = BotonPasto;
                         btn.BorderColor = Color.Transparent;
@@ -360,7 +361,7 @@ namespace CapaPresentacion.Utilidades
                         btn.Padding = new Padding(12, 0, 12, 0);
                         return;
                     }
-                    if (nombre == "rjbutton1" || nombre.Contains("buscar"))
+                    if (nombre == "rjbutton1" || nombre.Contains("buscar") || texto.Contains("buscar"))
                     {
                         btn.Text = "  Buscar";
                         btn.Image = IconChar.MagnifyingGlass.ToBitmap(BotonTexto, 16);
@@ -385,10 +386,20 @@ namespace CapaPresentacion.Utilidades
                 btn.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                 btn.Padding = new Padding(12, 0, 12, 0);
 
-                if (texto.Contains("guardar") || texto.Contains("registrar") || texto.Contains("agregar") ||
+                if (texto.Contains("buscar") || nombre.Contains("buscar") || texto.Contains("filtrar"))
+                {
+                    btn.Text = texto.Contains("filtrar") ? "  Filtrar" : "  Buscar";
+                    btn.Image = IconChar.MagnifyingGlass.ToBitmap(BotonTexto, 16);
+                    btn.BackColor = BotonYuzu;
+                    btn.BackgroundColor = BotonYuzu;
+                    btn.BorderColor = Color.Transparent;
+                    btn.TextColor = BotonTexto;
+                    btn.ForeColor = BotonTexto;
+                }
+                else if (texto.Contains("guardar") || texto.Contains("registrar") || texto.Contains("agregar") ||
                     nombre.Contains("guardar") || (nombre == "rjbutton1" && frmName != "FrmReporteVentas" && frmName != "FrmReporteCompra" && frmName != "FrmGraficos" && !texto.Contains("graficar")))
                 {
-                    btn.Text = "  Guardar";
+                    btn.Text = (frmName == "FrmVentas" || frmName == "FrmCompras") ? "  Registrar" : "  Guardar";
                     btn.Image = IconChar.FloppyDisk.ToBitmap(BotonTexto, 16);
                     btn.BackColor = BotonYuzu;
                     btn.BackgroundColor = BotonYuzu;
@@ -754,6 +765,7 @@ namespace CapaPresentacion.Utilidades
             bool isSelectCol = (!isDeleteCol && (
                                    (e.ColumnIndex == 0 && (colName.Contains("selec") || string.IsNullOrEmpty(headerText) || isButtonCol)) ||
                                    colName.Contains("btnseleccionar") ||
+                                   colName.Contains("btndetalle") ||
                                    (isButtonCol && string.IsNullOrEmpty(headerText)) ||
                                    (frmName == "FrmReporteCompra" && e.ColumnIndex == 14) ||
                                    (frmName == "FrmReporteVentas" && e.ColumnIndex == 13)

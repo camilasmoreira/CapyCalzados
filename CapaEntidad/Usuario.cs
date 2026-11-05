@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace CapaEntidad
 {
@@ -6,7 +6,11 @@ namespace CapaEntidad
     {
         public int IdUsuario { get; set; }
         public String Documento { get; set; }
+        public String Nombre { get; set; }
+        public String Apellido { get; set; }
         public String NombreCompleto { get; set; }
+        public String Direccion { get; set; }
+        public String Telefono { get; set; }
         public String Correo { get; set; }
         public String Clave { get; set; }
         public Rol oRol { get; set; }

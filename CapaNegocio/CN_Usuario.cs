@@ -17,19 +17,28 @@ namespace CapaNegocio
         {
             Mensaje = string.Empty;
 
-            if (obj.Documento == "")
+            if (string.IsNullOrWhiteSpace(obj.NombreCompleto))
+            {
+                obj.NombreCompleto = $"{obj.Nombre} {obj.Apellido}".Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(obj.Documento))
             {
                 Mensaje += "Es Necesario el Documento del Usuario\n";
             }
-            if (obj.NombreCompleto == "")
+            if (string.IsNullOrWhiteSpace(obj.Nombre))
             {
-                Mensaje += "Es Necesario el Nombre de Usuario\n";
+                Mensaje += "Es Necesario el Nombre del Usuario\n";
             }
-            if (obj.Clave == "")
+            if (string.IsNullOrWhiteSpace(obj.Apellido))
+            {
+                Mensaje += "Es Necesario el Apellido del Usuario\n";
+            }
+            if (string.IsNullOrWhiteSpace(obj.Clave))
             {
                 Mensaje += "Es Necesario la Clave del Usuario\n";
             }
-            if (obj.Correo == "")
+            if (string.IsNullOrWhiteSpace(obj.Correo))
             {
                 Mensaje += "Es Necesario el Correo del Usuario\n";
             }
@@ -42,26 +51,34 @@ namespace CapaNegocio
             {
                 return objcd_usuario.Registrar(obj, out Mensaje);
             }
-
         }
 
         public bool Editar(Usuario obj, out string Mensaje)
         {
             Mensaje = string.Empty;
 
-            if (obj.Documento == "")
+            if (string.IsNullOrWhiteSpace(obj.NombreCompleto))
+            {
+                obj.NombreCompleto = $"{obj.Nombre} {obj.Apellido}".Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(obj.Documento))
             {
                 Mensaje += "Es Necesario el Documento del Usuario\n";
             }
-            if (obj.NombreCompleto == "")
+            if (string.IsNullOrWhiteSpace(obj.Nombre))
             {
-                Mensaje += "Es Necesario el Nombre de Usuario\n";
+                Mensaje += "Es Necesario el Nombre del Usuario\n";
             }
-            if (obj.Clave == "")
+            if (string.IsNullOrWhiteSpace(obj.Apellido))
+            {
+                Mensaje += "Es Necesario el Apellido del Usuario\n";
+            }
+            if (string.IsNullOrWhiteSpace(obj.Clave))
             {
                 Mensaje += "Es Necesario la Clave del Usuario\n";
             }
-            if (obj.Correo == "")
+            if (string.IsNullOrWhiteSpace(obj.Correo))
             {
                 Mensaje += "Es Necesario el Correo del Usuario\n";
             }
@@ -80,6 +97,5 @@ namespace CapaNegocio
         {
             return objcd_usuario.Eliminar(obj, out Mensaje);
         }
-
     }
 }
