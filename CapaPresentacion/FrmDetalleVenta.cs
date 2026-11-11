@@ -19,6 +19,11 @@ namespace CapaPresentacion
     {
         public Inicio Inicio { get; set; }
         public string doc { get; set; }
+        private Usuario usuarioActual;
+
+        private bool EsVendedor =>
+            usuarioActual != null && usuarioActual.oRol != null &&
+            (usuarioActual.oRol.IdRol == 2 || string.Equals(usuarioActual.oRol.Descripcion, "Vendedor", StringComparison.OrdinalIgnoreCase));
 
         private DataGridView dgvFacturas;
         private DateTimePicker dtFechaInicio;
@@ -32,6 +37,7 @@ namespace CapaPresentacion
         {
             InitializeComponent();
             Inicio = inicio;
+            usuarioActual = inicio?.UsuarioActual;
             Inicio.pintar();
             ConfigurarInterfazMaestroDetalle();
         }
@@ -40,6 +46,7 @@ namespace CapaPresentacion
         {
             InitializeComponent();
             Inicio = inicio;
+            usuarioActual = inicio?.UsuarioActual;
             Inicio.pintar();
             ConfigurarInterfazMaestroDetalle();
             this.doc = numero;
@@ -287,7 +294,8 @@ namespace CapaPresentacion
         private void CargarMaestroVentas()
         {
             string filtroNumero = txtBusqueda.Texts != null ? txtBusqueda.Texts.Trim() : "";
-            _listaVentasActual = new CN_Venta().ListarVentas(dtFechaInicio.Value, dtFechaFin.Value, filtroNumero);
+            int idUsuarioFiltro = (EsVendedor && usuarioActual != null) ? usuarioActual.IdUsuario : 0;
+            _listaVentasActual = new CN_Venta().ListarVentas(dtFechaInicio.Value, dtFechaFin.Value, filtroNumero, idUsuarioFiltro);
 
             dgvFacturas.Rows.Clear();
             LimpiarDetalleSeleccionado();

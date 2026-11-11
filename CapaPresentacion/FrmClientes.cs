@@ -15,6 +15,10 @@ namespace CapaPresentacion
         private RJTextBox txtApellido;
         private Label lblApellido;
 
+        private bool EsVendedor =>
+            usuarioActual != null && usuarioActual.oRol != null &&
+            (usuarioActual.oRol.IdRol == 2 || string.Equals(usuarioActual.oRol.Descripcion, "Vendedor", StringComparison.OrdinalIgnoreCase));
+
         public FrmClientes(Usuario oUsuario = null)
         {
             InitializeComponent();
@@ -187,12 +191,24 @@ namespace CapaPresentacion
                 });
             }
 
-            // Si es vendedor (rol == 2), no puede eliminar clientes
-            if (usuarioActual != null && usuarioActual.oRol != null &&
-                (usuarioActual.oRol.IdRol == 2 || string.Equals(usuarioActual.oRol.Descripcion, "Vendedor", StringComparison.OrdinalIgnoreCase)))
+            // Si es vendedor (rol == 2), no puede eliminar clientes ni alterar el estado del cliente
+            if (EsVendedor)
             {
                 BtnEliminar2.Enabled = false;
                 BtnEliminar2.Visible = false;
+
+                label7.Visible = false;
+                comboEstado.Enabled = false;
+                comboEstado.Visible = false;
+
+                // Aprovechar el espacio de la fila 1 cuando se oculta la opción de Estado
+                txtDocumento.Size = new Size(190, 36);
+                label2.Location = new Point(222, 22);
+                txtNombre.Location = new Point(220, 43);
+                txtNombre.Size = new Size(270, 36);
+                lblApellido.Location = new Point(510, 22);
+                txtApellido.Location = new Point(508, 43);
+                txtApellido.Size = new Size(280, 36);
             }
         }
 
@@ -229,9 +245,30 @@ namespace CapaPresentacion
                     string apellido = txtApellido.Texts.Trim();
                     string nombreCompleto = $"{nombre} {apellido}".Trim();
 
+                    int idActual = Convert.ToInt32(txtid.Text);
+                    bool estadoCliente;
+                    if (EsVendedor)
+                    {
+                        if (idActual == 0)
+                        {
+                            estadoCliente = true;
+                        }
+                        else
+                        {
+                            int idx = Convert.ToInt32(txtindice.Text);
+                            estadoCliente = (idx >= 0 && idx < dgvData.Rows.Count)
+                                ? Convert.ToInt32(dgvData.Rows[idx].Cells["EstadoValor"].Value) == 1
+                                : true;
+                        }
+                    }
+                    else
+                    {
+                        estadoCliente = Convert.ToInt32(((OpcionesCombo)comboEstado.SelectedItem).Valor) == 1;
+                    }
+
                     Cliente objCliente = new Cliente()
                     {
-                        IdCliente = Convert.ToInt32(txtid.Text),
+                        IdCliente = idActual,
                         Documento = txtDocumento.Texts.Trim(),
                         Nombre = nombre,
                         Apellido = apellido,
@@ -239,7 +276,7 @@ namespace CapaPresentacion
                         Direccion = txtDireccion.Texts.Trim(),
                         Correo = txtCorreo.Texts.Trim(),
                         Telefono = txtTelefono.Texts.Trim(),
-                        Estado = Convert.ToInt32(((OpcionesCombo)comboEstado.SelectedItem).Valor) == 1
+                        Estado = estadoCliente
                     };
 
                     if (objCliente.IdCliente == 0)
@@ -257,8 +294,8 @@ namespace CapaPresentacion
                                 objCliente.Direccion,
                                 objCliente.Correo,
                                 objCliente.Telefono,
-                                ((OpcionesCombo)comboEstado.SelectedItem).Valor.ToString(),
-                                ((OpcionesCombo)comboEstado.SelectedItem).Texto.ToString()
+                                objCliente.Estado ? "1" : "0",
+                                objCliente.Estado ? "Activo" : "No Activo"
                             });
                             LimpiarCampos();
                         }
@@ -281,8 +318,8 @@ namespace CapaPresentacion
                             row.Cells["Direccion"].Value = objCliente.Direccion;
                             row.Cells["Correo"].Value = objCliente.Correo;
                             row.Cells["Telefono"].Value = objCliente.Telefono;
-                            row.Cells["EstadoValor"].Value = ((OpcionesCombo)comboEstado.SelectedItem).Valor.ToString();
-                            row.Cells["Estado"].Value = ((OpcionesCombo)comboEstado.SelectedItem).Texto.ToString();
+                            row.Cells["EstadoValor"].Value = objCliente.Estado ? "1" : "0";
+                            row.Cells["Estado"].Value = objCliente.Estado ? "Activo" : "No Activo";
                             LimpiarCampos();
                         }
                         else

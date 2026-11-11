@@ -44,6 +44,11 @@ namespace CapaNegocio
             return obj.EvolucionVentas(fechaDesde, fechaHasta);
         }
 
+        public DataTable EvolucionVentasHistorica(string agrupacion, DateTime fechaDesde, DateTime fechaHasta)
+        {
+            return obj.EvolucionVentasHistorica(agrupacion, fechaDesde, fechaHasta);
+        }
+
         public DataTable RankingVendedores(DateTime fechaDesde, DateTime fechaHasta)
         {
             return obj.RankingVendedores(fechaDesde, fechaHasta);

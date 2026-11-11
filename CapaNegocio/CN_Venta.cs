@@ -30,9 +30,9 @@ namespace CapaNegocio
             return objcd_Venta.RestarStock(idProd, cantidad);
         }
 
-        public List<Venta> ListarVentas(DateTime fechaInicio, DateTime fechaFin, string numero = "")
+        public List<Venta> ListarVentas(DateTime fechaInicio, DateTime fechaFin, string numero = "", int idUsuario = 0)
         {
-            return objcd_Venta.ListarVentas(fechaInicio, fechaFin, numero);
+            return objcd_Venta.ListarVentas(fechaInicio, fechaFin, numero, idUsuario);
         }
 
         public List<DetalleVenta> obtenerDetalleVenta(int idVenta)

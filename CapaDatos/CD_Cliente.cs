@@ -18,7 +18,7 @@ namespace CapaDatos
                 try
                 {
                     StringBuilder query = new StringBuilder();
-                    query.AppendLine("select IdCliente, Documento, ISNULL(Nombre,'') AS Nombre, ISNULL(Apellido,'') AS Apellido, NombreCompleto, Direccion, Correo, Telefono, Estado from Cliente");
+                    query.AppendLine("select IdCliente, Documento, ISNULL(Nombre,'') AS Nombre, ISNULL(Apellido,'') AS Apellido, Direccion, Correo, Telefono, Estado from Cliente");
 
                     SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
                     cmd.CommandType = CommandType.Text;
@@ -30,13 +30,7 @@ namespace CapaDatos
                         {
                             string nombre = dr["Nombre"].ToString();
                             string apellido = dr["Apellido"].ToString();
-                            string nombreCompleto = dr["NombreCompleto"].ToString();
-                            if (string.IsNullOrWhiteSpace(nombre) && !string.IsNullOrWhiteSpace(nombreCompleto))
-                            {
-                                var parts = nombreCompleto.Trim().Split(new[] { ' ' }, 2);
-                                nombre = parts[0];
-                                apellido = parts.Length > 1 ? parts[1] : "";
-                            }
+                            string nombreCompleto = $"{nombre} {apellido}".Trim();
 
                             lista.Add(new Cliente()
                             {
@@ -72,7 +66,6 @@ namespace CapaDatos
                 {
                     SqlCommand cmd = new SqlCommand("SP_REGISTRARCLIENTE", oconexion);
                     cmd.Parameters.AddWithValue("Documento", obj.Documento);
-                    cmd.Parameters.AddWithValue("NombreCompleto", !string.IsNullOrWhiteSpace(obj.NombreCompleto) ? obj.NombreCompleto : $"{obj.Nombre} {obj.Apellido}".Trim());
                     cmd.Parameters.AddWithValue("Direccion", obj.Direccion);
                     cmd.Parameters.AddWithValue("Correo", obj.Correo);
                     cmd.Parameters.AddWithValue("Telefono", obj.Telefono);
@@ -111,7 +104,6 @@ namespace CapaDatos
                     SqlCommand cmd = new SqlCommand("SP_EDITARCLIENTE", oconexion);
                     cmd.Parameters.AddWithValue("IdCliente", obj.IdCliente);
                     cmd.Parameters.AddWithValue("Documento", obj.Documento);
-                    cmd.Parameters.AddWithValue("NombreCompleto", !string.IsNullOrWhiteSpace(obj.NombreCompleto) ? obj.NombreCompleto : $"{obj.Nombre} {obj.Apellido}".Trim());
                     cmd.Parameters.AddWithValue("Direccion", obj.Direccion);
                     cmd.Parameters.AddWithValue("Correo", obj.Correo);
                     cmd.Parameters.AddWithValue("Telefono", obj.Telefono);

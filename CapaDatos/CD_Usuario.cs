@@ -18,7 +18,7 @@ namespace CapaDatos
                 try
                 {
                     StringBuilder query = new StringBuilder();
-                    query.AppendLine("select u.IdUsuario, u.Documento, ISNULL(u.Nombre,'') AS Nombre, ISNULL(u.Apellido,'') AS Apellido, u.NombreCompleto, ISNULL(u.Direccion,'') AS Direccion, ISNULL(u.Telefono,'') AS Telefono, u.Correo, u.Clave, u.Estado, r.IdRol, r.Descripcion from usuario u");
+                    query.AppendLine("select u.IdUsuario, u.Documento, ISNULL(u.Nombre,'') AS Nombre, ISNULL(u.Apellido,'') AS Apellido, ISNULL(u.Direccion,'') AS Direccion, ISNULL(u.Telefono,'') AS Telefono, u.Correo, u.Clave, u.Estado, r.IdRol, r.Descripcion from usuario u");
                     query.AppendLine("inner join Rol r on r.IdRol = u.IdRol");
                     SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
 
@@ -31,13 +31,7 @@ namespace CapaDatos
                         {
                             string nombre = dr["Nombre"].ToString();
                             string apellido = dr["Apellido"].ToString();
-                            string nombreCompleto = dr["NombreCompleto"].ToString();
-                            if (string.IsNullOrWhiteSpace(nombre) && !string.IsNullOrWhiteSpace(nombreCompleto))
-                            {
-                                var parts = nombreCompleto.Trim().Split(new[] { ' ' }, 2);
-                                nombre = parts[0];
-                                apellido = parts.Length > 1 ? parts[1] : "";
-                            }
+                            string nombreCompleto = $"{nombre} {apellido}".Trim();
 
                             lista.Add(new Usuario()
                             {
@@ -75,7 +69,6 @@ namespace CapaDatos
                 {
                     SqlCommand cmd = new SqlCommand("SP_REGISTRARUSUARIO", oconexion);
                     cmd.Parameters.AddWithValue("Documento", obj.Documento);
-                    cmd.Parameters.AddWithValue("NombreCompleto", !string.IsNullOrWhiteSpace(obj.NombreCompleto) ? obj.NombreCompleto : $"{obj.Nombre} {obj.Apellido}".Trim());
                     cmd.Parameters.AddWithValue("Correo", obj.Correo);
                     cmd.Parameters.AddWithValue("Clave", obj.Clave);
                     cmd.Parameters.AddWithValue("IdRol", obj.oRol.IdRol);
@@ -117,7 +110,6 @@ namespace CapaDatos
                     SqlCommand cmd = new SqlCommand("SP_EDITARUSUARIO", oconexion);
                     cmd.Parameters.AddWithValue("IdUsuario", obj.IdUsuario);
                     cmd.Parameters.AddWithValue("Documento", obj.Documento);
-                    cmd.Parameters.AddWithValue("NombreCompleto", !string.IsNullOrWhiteSpace(obj.NombreCompleto) ? obj.NombreCompleto : $"{obj.Nombre} {obj.Apellido}".Trim());
                     cmd.Parameters.AddWithValue("Correo", obj.Correo);
                     cmd.Parameters.AddWithValue("Clave", obj.Clave);
                     cmd.Parameters.AddWithValue("IdRol", obj.oRol.IdRol);

@@ -93,7 +93,7 @@ namespace CapaDatos
             return obj;
         }
 
-        // 1. Productos más vendidos (Unidades) con filtro de fecha
+        // 1. Top 5 Productos más vendidos (Unidades) con filtro de fecha
         public DataTable ProductosMasVendidos(DateTime fechaDesde, DateTime fechaHasta)
         {
             DataTable dt = new DataTable();
@@ -102,12 +102,12 @@ namespace CapaDatos
                 try
                 {
                     string query = @"
-                        SELECT TOP 6 p.Nombre AS Producto, SUM(dv.Cantidad) AS Cantidad
+                        SELECT TOP 5 p.Nombre AS Producto, SUM(dv.Cantidad) AS Cantidad
                         FROM Detalle_Venta dv
                         INNER JOIN Venta v ON v.IdVenta = dv.IdVenta
                         INNER JOIN Productos p ON p.IdProducto = dv.IdProducto
                         WHERE CAST(v.FechaRegistro AS DATE) BETWEEN CAST(@desde AS DATE) AND CAST(@hasta AS DATE)
-                        GROUP BY p.Nombre
+                        GROUP BY p.IdProducto, p.Nombre
                         ORDER BY SUM(dv.Cantidad) DESC";
                     SqlCommand cmd = new SqlCommand(query, oconexion);
                     cmd.Parameters.AddWithValue("@desde", fechaDesde.Date);
@@ -120,7 +120,7 @@ namespace CapaDatos
             return dt;
         }
 
-        // 2. Productos de mayor recaudación ($) con filtro de fecha
+        // 2. Top 5 Productos de mayor recaudación ($) con filtro de fecha
         public DataTable ProductosMayorRecaudacion(DateTime fechaDesde, DateTime fechaHasta)
         {
             DataTable dt = new DataTable();
@@ -129,12 +129,12 @@ namespace CapaDatos
                 try
                 {
                     string query = @"
-                        SELECT TOP 6 p.Nombre AS Producto, SUM(dv.SubTotal) AS Recaudacion
+                        SELECT TOP 5 p.Nombre AS Producto, SUM(dv.SubTotal) AS Recaudacion
                         FROM Detalle_Venta dv
                         INNER JOIN Venta v ON v.IdVenta = dv.IdVenta
                         INNER JOIN Productos p ON p.IdProducto = dv.IdProducto
                         WHERE CAST(v.FechaRegistro AS DATE) BETWEEN CAST(@desde AS DATE) AND CAST(@hasta AS DATE)
-                        GROUP BY p.Nombre
+                        GROUP BY p.IdProducto, p.Nombre
                         ORDER BY SUM(dv.SubTotal) DESC";
                     SqlCommand cmd = new SqlCommand(query, oconexion);
                     cmd.Parameters.AddWithValue("@desde", fechaDesde.Date);
@@ -147,7 +147,7 @@ namespace CapaDatos
             return dt;
         }
 
-        // 3. Evolución de ventas por fecha ($)
+        // 3. Evolución detallada de ventas por fecha ($)
         public DataTable EvolucionVentas(DateTime fechaDesde, DateTime fechaHasta)
         {
             DataTable dt = new DataTable();
@@ -175,6 +175,100 @@ namespace CapaDatos
             return dt;
         }
 
+        // 3b. Evolución histórica general de ventas agrupada por períodos mayores (SEMANA, MES, TRIMESTRE, ANIO)
+        public DataTable EvolucionVentasHistorica(string agrupacion, DateTime fechaDesde, DateTime fechaHasta)
+        {
+            DataTable dt = new DataTable();
+            using (SqlConnection oconexion = new SqlConnection(Conexion.cadena))
+            {
+                try
+                {
+                    string modo = (agrupacion ?? "MES").Trim().ToUpperInvariant();
+                    string query;
+
+                    if (modo == "SEMANA")
+                    {
+                        query = @"
+                            SET DATEFIRST 1;
+                            SELECT 
+                                YEAR(v.FechaRegistro) AS Anio,
+                                DATEPART(WEEK, v.FechaRegistro) AS SubPeriodo,
+                                'Sem ' + CAST(DATEPART(WEEK, v.FechaRegistro) AS VARCHAR(4)) + ' (' + CONVERT(VARCHAR(5), MIN(CAST(v.FechaRegistro AS DATE)), 103) + ')' AS Periodo,
+                                SUM(v.MontoTotal) AS TotalVentas,
+                                COUNT(v.IdVenta) AS CantidadVentas
+                            FROM Venta v
+                            WHERE CAST(v.FechaRegistro AS DATE) BETWEEN CAST(@desde AS DATE) AND CAST(@hasta AS DATE)
+                            GROUP BY YEAR(v.FechaRegistro), DATEPART(WEEK, v.FechaRegistro)
+                            ORDER BY Anio ASC, SubPeriodo ASC";
+                    }
+                    else if (modo == "TRIMESTRE")
+                    {
+                        query = @"
+                            SELECT 
+                                YEAR(v.FechaRegistro) AS Anio,
+                                DATEPART(QUARTER, v.FechaRegistro) AS SubPeriodo,
+                                'T' + CAST(DATEPART(QUARTER, v.FechaRegistro) AS VARCHAR(2)) + ' ' + CAST(YEAR(v.FechaRegistro) AS VARCHAR(4)) AS Periodo,
+                                SUM(v.MontoTotal) AS TotalVentas,
+                                COUNT(v.IdVenta) AS CantidadVentas
+                            FROM Venta v
+                            WHERE CAST(v.FechaRegistro AS DATE) BETWEEN CAST(@desde AS DATE) AND CAST(@hasta AS DATE)
+                            GROUP BY YEAR(v.FechaRegistro), DATEPART(QUARTER, v.FechaRegistro)
+                            ORDER BY Anio ASC, SubPeriodo ASC";
+                    }
+                    else if (modo == "ANIO")
+                    {
+                        query = @"
+                            SELECT 
+                                YEAR(v.FechaRegistro) AS Anio,
+                                1 AS SubPeriodo,
+                                CAST(YEAR(v.FechaRegistro) AS VARCHAR(4)) AS Periodo,
+                                SUM(v.MontoTotal) AS TotalVentas,
+                                COUNT(v.IdVenta) AS CantidadVentas
+                            FROM Venta v
+                            WHERE CAST(v.FechaRegistro AS DATE) BETWEEN CAST(@desde AS DATE) AND CAST(@hasta AS DATE)
+                            GROUP BY YEAR(v.FechaRegistro)
+                            ORDER BY Anio ASC";
+                    }
+                    else
+                    {
+                        // Por defecto: Agrupado por MES
+                        query = @"
+                            SELECT 
+                                YEAR(v.FechaRegistro) AS Anio,
+                                MONTH(v.FechaRegistro) AS SubPeriodo,
+                                CASE MONTH(v.FechaRegistro)
+                                    WHEN 1 THEN 'Ene '
+                                    WHEN 2 THEN 'Feb '
+                                    WHEN 3 THEN 'Mar '
+                                    WHEN 4 THEN 'Abr '
+                                    WHEN 5 THEN 'May '
+                                    WHEN 6 THEN 'Jun '
+                                    WHEN 7 THEN 'Jul '
+                                    WHEN 8 THEN 'Ago '
+                                    WHEN 9 THEN 'Sep '
+                                    WHEN 10 THEN 'Oct '
+                                    WHEN 11 THEN 'Nov '
+                                    WHEN 12 THEN 'Dic '
+                                END + CAST(YEAR(v.FechaRegistro) AS VARCHAR(4)) AS Periodo,
+                                SUM(v.MontoTotal) AS TotalVentas,
+                                COUNT(v.IdVenta) AS CantidadVentas
+                            FROM Venta v
+                            WHERE CAST(v.FechaRegistro AS DATE) BETWEEN CAST(@desde AS DATE) AND CAST(@hasta AS DATE)
+                            GROUP BY YEAR(v.FechaRegistro), MONTH(v.FechaRegistro)
+                            ORDER BY Anio ASC, SubPeriodo ASC";
+                    }
+
+                    SqlCommand cmd = new SqlCommand(query, oconexion);
+                    cmd.Parameters.AddWithValue("@desde", fechaDesde.Date);
+                    cmd.Parameters.AddWithValue("@hasta", fechaHasta.Date);
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(dt);
+                }
+                catch { }
+            }
+            return dt;
+        }
+
         // 4. Ranking de vendedores ($ y cantidad de ventas)
         public DataTable RankingVendedores(DateTime fechaDesde, DateTime fechaHasta)
         {
@@ -184,13 +278,13 @@ namespace CapaDatos
                 try
                 {
                     string query = @"
-                        SELECT u.NombreCompleto AS Vendedor,
+                        SELECT LTRIM(RTRIM(ISNULL(u.Nombre, '') + ' ' + ISNULL(u.Apellido, ''))) AS Vendedor,
                                COUNT(v.IdVenta) AS CantidadVentas,
                                SUM(v.MontoTotal) AS TotalRecaudado
                         FROM Venta v
                         INNER JOIN Usuario u ON u.IdUsuario = v.IdUsuario
                         WHERE CAST(v.FechaRegistro AS DATE) BETWEEN CAST(@desde AS DATE) AND CAST(@hasta AS DATE)
-                        GROUP BY u.NombreCompleto
+                        GROUP BY LTRIM(RTRIM(ISNULL(u.Nombre, '') + ' ' + ISNULL(u.Apellido, '')))
                         ORDER BY SUM(v.MontoTotal) DESC";
                     SqlCommand cmd = new SqlCommand(query, oconexion);
                     cmd.Parameters.AddWithValue("@desde", fechaDesde.Date);

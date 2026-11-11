@@ -275,8 +275,8 @@ namespace CapaPresentacion.Utilidades
                     return;
                 }
 
-                // Tarjetas métricas de FrmGraficos (Total Ventas y Total Compras)
-                if (frmName == "FrmGraficos" && (nombre == "ventas" || nombre == "compras"))
+                // Tarjetas métricas de FrmGraficos y FrmGraficosHistorico (Total Ventas y Total Compras / Promedio)
+                if ((frmName == "FrmGraficos" || frmName == "FrmGraficosHistorico") && (nombre == "ventas" || nombre == "compras"))
                 {
                     btn.BackColor = ContenedorCard;
                     btn.BackgroundColor = ContenedorCard;
@@ -285,15 +285,15 @@ namespace CapaPresentacion.Utilidades
                     btn.BorderSize = 1;
                     btn.TextColor = TextoPrincipal;
                     btn.ForeColor = TextoPrincipal;
-                    btn.Font = new Font("Segoe UI", 11.5f, FontStyle.Bold);
+                    btn.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
                     if (nombre == "ventas")
-                        btn.Image = IconChar.CartShopping.ToBitmap(BotonYuzu, 26);
+                        btn.Image = IconChar.CartShopping.ToBitmap(BotonYuzu, 24);
                     else
-                        btn.Image = IconChar.TruckFast.ToBitmap(MenuIcono, 26);
+                        btn.Image = (frmName == "FrmGraficosHistorico" ? IconChar.ChartColumn : IconChar.TruckFast).ToBitmap(MenuIcono, 24);
                     btn.TextImageRelation = TextImageRelation.ImageBeforeText;
                     btn.ImageAlign = ContentAlignment.MiddleLeft;
                     btn.TextAlign = ContentAlignment.MiddleCenter;
-                    btn.Padding = new Padding(16, 0, 16, 0);
+                    btn.Padding = new Padding(12, 0, 12, 0);
                     btn.Cursor = Cursors.Default;
                     return;
                 }

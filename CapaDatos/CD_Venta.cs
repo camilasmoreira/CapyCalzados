@@ -127,7 +127,7 @@ namespace CapaDatos
             return Resultado;
         }
 
-        public List<Venta> ListarVentas(DateTime fechaInicio, DateTime fechaFin, string numero = "")
+        public List<Venta> ListarVentas(DateTime fechaInicio, DateTime fechaFin, string numero = "", int idUsuario = 0)
         {
             List<Venta> lista = new List<Venta>();
             using (SqlConnection oconexion = new SqlConnection(Conexion.cadena))
@@ -136,8 +136,8 @@ namespace CapaDatos
                 {
                     oconexion.Open();
                     StringBuilder query = new StringBuilder();
-                    query.AppendLine("SELECT v.IdVenta, u.NombreCompleto, u.Documento,");
-                    query.AppendLine("v.IdCliente, ISNULL(c.Documento, '') AS DocumentoCliente, ISNULL(c.NombreCompleto, 'Consumidor Final') AS NombreCliente,");
+                    query.AppendLine("SELECT v.IdVenta, v.IdUsuario, LTRIM(RTRIM(ISNULL(u.Nombre, '') + ' ' + ISNULL(u.Apellido, ''))) AS NombreCompleto, u.Documento,");
+                    query.AppendLine("v.IdCliente, ISNULL(c.Documento, '') AS DocumentoCliente, ISNULL(NULLIF(LTRIM(RTRIM(ISNULL(c.Nombre, '') + ' ' + ISNULL(c.Apellido, ''))), ''), 'Consumidor Final') AS NombreCliente,");
                     query.AppendLine("v.TipoDocumento, ISNULL(v.FormaPago, 'Efectivo') AS FormaPago, v.NumeroDocumento,");
                     query.AppendLine("v.MontoPago, v.MontoCambio, v.MontoTotal,");
                     query.AppendLine("CONVERT(char(10), v.FechaRegistro, 103) AS FechaRegistro");
@@ -149,6 +149,10 @@ namespace CapaDatos
                     {
                         query.AppendLine("AND v.NumeroDocumento LIKE '%' + @numero + '%'");
                     }
+                    if (idUsuario > 0)
+                    {
+                        query.AppendLine("AND v.IdUsuario = @idUsuario");
+                    }
                     query.AppendLine("ORDER BY v.FechaRegistro DESC, v.IdVenta DESC");
 
                     SqlCommand cmd = new SqlCommand(query.ToString(), oconexion);
@@ -157,6 +161,10 @@ namespace CapaDatos
                     if (!string.IsNullOrWhiteSpace(numero))
                     {
                         cmd.Parameters.AddWithValue("@numero", numero.Trim());
+                    }
+                    if (idUsuario > 0)
+                    {
+                        cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
                     }
                     cmd.CommandType = CommandType.Text;
 
@@ -167,7 +175,12 @@ namespace CapaDatos
                             lista.Add(new Venta()
                             {
                                 IdVenta = Convert.ToInt32(dr["IdVenta"]),
-                                oUsuario = new Usuario { NombreCompleto = dr["NombreCompleto"].ToString(), Documento = dr["Documento"].ToString() },
+                                oUsuario = new Usuario
+                                {
+                                    IdUsuario = Convert.ToInt32(dr["IdUsuario"]),
+                                    NombreCompleto = dr["NombreCompleto"].ToString(),
+                                    Documento = dr["Documento"].ToString()
+                                },
                                 oCliente = new Cliente
                                 {
                                     IdCliente = dr["IdCliente"] != DBNull.Value ? Convert.ToInt32(dr["IdCliente"]) : 0,
@@ -204,8 +217,8 @@ namespace CapaDatos
                 {
                     oconexion.Open();
                     StringBuilder query = new StringBuilder();
-                    query.AppendLine("select v.IdVenta,u.NombreCompleto,u.Documento,");
-                    query.AppendLine("v.IdCliente,ISNULL(c.Documento, '') AS DocumentoCliente,ISNULL(c.NombreCompleto, 'Consumidor Final') AS NombreCliente,");
+                    query.AppendLine("select v.IdVenta, v.IdUsuario, LTRIM(RTRIM(ISNULL(u.Nombre, '') + ' ' + ISNULL(u.Apellido, ''))) AS NombreCompleto,u.Documento,");
+                    query.AppendLine("v.IdCliente,ISNULL(c.Documento, '') AS DocumentoCliente,ISNULL(NULLIF(LTRIM(RTRIM(ISNULL(c.Nombre, '') + ' ' + ISNULL(c.Apellido, ''))), ''), 'Consumidor Final') AS NombreCliente,");
                     query.AppendLine("v.TipoDocumento,ISNULL(v.FormaPago, 'Efectivo') AS FormaPago,v.NumeroDocumento,");
                     query.AppendLine("v.MontoPago,v.MontoCambio,v.MontoTotal,");
                     query.AppendLine("convert(char(10), v.FechaRegistro, 103)[FechaRegistro]");
@@ -224,7 +237,12 @@ namespace CapaDatos
                             obj = new Venta()
                             {
                                 IdVenta = Convert.ToInt32(dr["IdVenta"]),
-                                oUsuario = new Usuario { NombreCompleto = dr["NombreCompleto"].ToString(), Documento = dr["Documento"].ToString() },
+                                oUsuario = new Usuario
+                                {
+                                    IdUsuario = Convert.ToInt32(dr["IdUsuario"]),
+                                    NombreCompleto = dr["NombreCompleto"].ToString(),
+                                    Documento = dr["Documento"].ToString()
+                                },
                                 oCliente = new Cliente
                                 {
                                     IdCliente = dr["IdCliente"] != DBNull.Value ? Convert.ToInt32(dr["IdCliente"]) : 0,

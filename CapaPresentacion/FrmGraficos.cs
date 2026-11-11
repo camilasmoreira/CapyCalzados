@@ -3,6 +3,7 @@ using CapaNegocio;
 using CapaPresentacion.Modales;
 using CapaPresentacion.Utilidades;
 using CustomControls.RJControls;
+using FontAwesome.Sharp;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,29 +14,33 @@ using System.Windows.Forms.DataVisualization.Charting;
 
 namespace CapaPresentacion
 {
-    // Módulo de Estadísticas Analíticas para el perfil Gerente
+    // Módulo de Estadísticas Analíticas - Sección: Visión Detallada con Filtros
     public partial class FrmGraficos : Form
     {
+        public Inicio InicioRef { get; set; }
+
         private ComboBox comboPeriodo;
         private DateTimePicker dtFechaDesde;
         private DateTimePicker dtFechaHasta;
         private RJButton btnFiltrar;
+        private RJButton btnIrHistorico;
 
         private Chart chMayorRecaudacion;
         private Chart chEvolucionVentas;
         private Chart chRankingVendedores;
         private Chart chDiasMovimiento;
 
-        public FrmGraficos()
+        public FrmGraficos(Inicio inicio = null)
         {
             InitializeComponent();
+            InicioRef = inicio;
             ConfigurarDashboardEstadisticas();
         }
 
         private void ConfigurarDashboardEstadisticas()
         {
-            // 1. Configurar Panel Superior con Filtros de Fecha obligatorios (Semana, Mes, Año, Personalizado) + KPIs
-            groupBox1.Text = "Filtros de Período y Resumen Ejecutivo";
+            // 1. Configurar Panel Superior: Visión Detallada con Filtros (Períodos Recientes y Fechas Determinadas) + KPIs
+            groupBox1.Text = "Visión Detallada con Filtros (Fechas Específicas y Períodos Recientes)";
             groupBox1.Location = new Point(45, 20);
             groupBox1.Size = new Size(830, 112);
 
@@ -44,22 +49,22 @@ namespace CapaPresentacion
             Label lblPeriodo = new Label()
             {
                 AutoSize = true,
-                Text = "Período:",
-                Location = new Point(16, 24),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+                Text = "Período Reciente:",
+                Location = new Point(16, 22),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
             comboPeriodo = new ComboBox()
             {
                 Name = "comboPeriodo",
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 FlatStyle = FlatStyle.Flat,
-                Location = new Point(16, 46),
-                Size = new Size(135, 28)
+                Location = new Point(16, 43),
+                Size = new Size(140, 28)
             };
-            comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "ANIO", Texto = "Último Año" });
             comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "MES", Texto = "Último Mes" });
+            comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "QUINCE", Texto = "Últimos 15 Días" });
             comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "SEMANA", Texto = "Última Semana" });
-            comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "TODO", Texto = "Histórico Completo" });
+            comboPeriodo.Items.Add(new OpcionesCombo() { Valor = "PERSONALIZADO", Texto = "Fechas Determinadas" });
             comboPeriodo.DisplayMember = "Texto";
             comboPeriodo.ValueMember = "Valor";
             comboPeriodo.SelectedIndex = 0;
@@ -69,28 +74,28 @@ namespace CapaPresentacion
             {
                 AutoSize = true,
                 Text = "Desde:",
-                Location = new Point(162, 24),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+                Location = new Point(166, 22),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
             dtFechaDesde = new DateTimePicker()
             {
                 Format = DateTimePickerFormat.Short,
-                Location = new Point(162, 47),
+                Location = new Point(166, 44),
                 Size = new Size(102, 26),
-                Value = DateTime.Now.Date.AddYears(-1)
+                Value = DateTime.Now.Date.AddMonths(-1)
             };
 
             Label lblHasta = new Label()
             {
                 AutoSize = true,
                 Text = "Hasta:",
-                Location = new Point(274, 24),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+                Location = new Point(276, 22),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
             dtFechaHasta = new DateTimePicker()
             {
                 Format = DateTimePickerFormat.Short,
-                Location = new Point(274, 47),
+                Location = new Point(276, 44),
                 Size = new Size(102, 26),
                 Value = DateTime.Now.Date.AddDays(1)
             };
@@ -99,19 +104,29 @@ namespace CapaPresentacion
             {
                 Name = "btnFiltrar",
                 Text = "  Filtrar",
-                Location = new Point(386, 40),
-                Size = new Size(105, 38)
+                Location = new Point(386, 38),
+                Size = new Size(105, 34)
             };
             btnFiltrar.Click += (s, ev) => ActualizarTodosLosGraficos();
 
+            // Botón para ir a la sección (Form) independiente de Visión Histórica General (por Semana, Mes, etc.)
+            btnIrHistorico = new RJButton()
+            {
+                Name = "btnIrHistorico",
+                Text = "  Visión Histórica General",
+                Location = new Point(16, 78),
+                Size = new Size(475, 28)
+            };
+            btnIrHistorico.Click += BtnIrHistorico_Click;
+
             // Tarjetas KPI compactas a la derecha del filtro
             Ventas.Location = new Point(502, 22);
-            Ventas.Size = new Size(155, 78);
+            Ventas.Size = new Size(155, 80);
             Ventas.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
             Ventas.TextAlign = ContentAlignment.MiddleCenter;
 
             Compras.Location = new Point(664, 22);
-            Compras.Size = new Size(155, 78);
+            Compras.Size = new Size(155, 80);
             Compras.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
             Compras.TextAlign = ContentAlignment.MiddleCenter;
 
@@ -122,21 +137,22 @@ namespace CapaPresentacion
             groupBox1.Controls.Add(lblHasta);
             groupBox1.Controls.Add(dtFechaHasta);
             groupBox1.Controls.Add(btnFiltrar);
+            groupBox1.Controls.Add(btnIrHistorico);
 
-            // 2. Configurar los 5 Gráficos Requeridos:
+            // 2. Configurar los Gráficos de la Visión Detallada con limitación Top 5:
             // Fila Superior (3 gráficos):
-            // (1) Productos más vendidos (reutilizamos chVentas)
+            // (1) Top 5 Productos más vendidos (reutilizamos chVentas)
             chVentas.Location = new Point(45, 140);
             chVentas.Size = new Size(270, 222);
             chVentas.Titles.Clear();
-            chVentas.Titles.Add(new Title("1. Productos Más Vendidos (Unid.)", Docking.Top, new Font("Segoe UI", 9.5F, FontStyle.Bold), Color.White));
+            chVentas.Titles.Add(new Title("1. Top 5 Productos Más Vendidos", Docking.Top, new Font("Segoe UI", 9.5F, FontStyle.Bold), Color.White));
             chVentas.Legends.Clear();
 
-            // (2) Productos de mayor recaudación (reutilizamos chCompras)
+            // (2) Top 5 Productos de mayor recaudación (reutilizamos chCompras)
             chCompras.Location = new Point(325, 140);
             chCompras.Size = new Size(270, 222);
             chCompras.Titles.Clear();
-            chCompras.Titles.Add(new Title("2. Mayor Recaudación ($)", Docking.Top, new Font("Segoe UI", 9.5F, FontStyle.Bold), Color.White));
+            chCompras.Titles.Add(new Title("2. Top 5 Mayor Recaudación ($)", Docking.Top, new Font("Segoe UI", 9.5F, FontStyle.Bold), Color.White));
 
             // (3) Ranking de Vendedores
             chRankingVendedores = CrearGraficoBase("chRankingVendedores", "3. Ranking de Vendedores ($)", new Point(605, 140), new Size(270, 222));
@@ -144,8 +160,8 @@ namespace CapaPresentacion
             chRankingVendedores.BringToFront();
 
             // Fila Inferior (2 gráficos anchos):
-            // (4) Evolución de Ventas por Fecha
-            chEvolucionVentas = CrearGraficoBase("chEvolucionVentas", "4. Evolución de Ventas por Fecha ($)", new Point(45, 370), new Size(410, 225));
+            // (4) Evolución Detallada de Ventas por Fecha (responde a los filtros de fechas específicas / recientes)
+            chEvolucionVentas = CrearGraficoBase("chEvolucionVentas", "4. Evolución Detallada de Ventas por Fecha ($)", new Point(45, 370), new Size(410, 225));
             this.Controls.Add(chEvolucionVentas);
             chEvolucionVentas.BringToFront();
 
@@ -157,6 +173,37 @@ namespace CapaPresentacion
             chVentas.BringToFront();
             chCompras.BringToFront();
             groupBox1.BringToFront();
+        }
+
+        private void BtnIrHistorico_Click(object sender, EventArgs e)
+        {
+            if (InicioRef != null)
+            {
+                InicioRef.AbrirGraficosHistorico();
+            }
+            else
+            {
+                using (var frmHist = new FrmGraficosHistorico(null))
+                {
+                    frmHist.StartPosition = FormStartPosition.CenterParent;
+                    frmHist.ShowDialog(this);
+                }
+            }
+        }
+
+        private void EstilizarBotonHistorico()
+        {
+            if (btnIrHistorico != null)
+            {
+                btnIrHistorico.Text = "  Ver Sección: Visión Histórica General (Por Semana / Mes / Año)";
+                btnIrHistorico.Image = IconChar.ChartLine.ToBitmap(TemaCapybara.BotonTexto, 15);
+                btnIrHistorico.BackColor = TemaCapybara.BotonPasto;
+                btnIrHistorico.BackgroundColor = TemaCapybara.BotonPasto;
+                btnIrHistorico.TextImageRelation = TextImageRelation.ImageBeforeText;
+                btnIrHistorico.ImageAlign = ContentAlignment.MiddleLeft;
+                btnIrHistorico.TextAlign = ContentAlignment.MiddleCenter;
+                btnIrHistorico.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            }
         }
 
         private Chart CrearGraficoBase(string nombre, string titulo, Point ubicacion, Size tamano)
@@ -188,12 +235,10 @@ namespace CapaPresentacion
 
             if (val == "SEMANA")
                 dtFechaDesde.Value = hoy.AddDays(-7);
+            else if (val == "QUINCE")
+                dtFechaDesde.Value = hoy.AddDays(-15);
             else if (val == "MES")
                 dtFechaDesde.Value = hoy.AddMonths(-1);
-            else if (val == "ANIO")
-                dtFechaDesde.Value = hoy.AddYears(-1);
-            else
-                dtFechaDesde.Value = hoy.AddYears(-3);
 
             ActualizarTodosLosGraficos();
         }
@@ -205,6 +250,7 @@ namespace CapaPresentacion
         private void FrmGraficos_Load(object sender, EventArgs e)
         {
             TemaCapybara.AplicarTema(this);
+            EstilizarBotonHistorico();
             ActualizarTodosLosGraficos();
         }
 
@@ -223,7 +269,7 @@ namespace CapaPresentacion
             Ventas.Text = $"Total Ventas:\n${totV:N2}";
             Compras.Text = $"Total Compras:\n${totC:N2}";
 
-            // 1. Productos Más Vendidos (Unidades)
+            // 1. Top 5 Productos Más Vendidos (Unidades)
             DataTable dtMasVendidos = cn.ProductosMasVendidos(desde, hasta);
             chVentas.Series.Clear();
             chVentas.ChartAreas[0].AxisX.Interval = 1;
@@ -234,15 +280,17 @@ namespace CapaPresentacion
                 IsValueShownAsLabel = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold)
             };
-            foreach (DataRow row in dtMasVendidos.Rows)
+            int topVendidos = Math.Min(dtMasVendidos.Rows.Count, 5);
+            for (int i = 0; i < topVendidos; i++)
             {
+                DataRow row = dtMasVendidos.Rows[i];
                 string prod = AcortarNombre(row["Producto"].ToString(), 16);
                 int cant = Convert.ToInt32(row["Cantidad"]);
                 sVendidos.Points.AddXY(prod, cant);
             }
             chVentas.Series.Add(sVendidos);
 
-            // 2. Productos de Mayor Recaudación ($)
+            // 2. Top 5 Productos de Mayor Recaudación ($)
             DataTable dtRecaudacion = cn.ProductosMayorRecaudacion(desde, hasta);
             chCompras.Series.Clear();
             chCompras.Legends.Clear();
@@ -260,8 +308,10 @@ namespace CapaPresentacion
                 LabelFormat = "${0:N0}",
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold)
             };
-            foreach (DataRow row in dtRecaudacion.Rows)
+            int topRecaudacion = Math.Min(dtRecaudacion.Rows.Count, 5);
+            for (int i = 0; i < topRecaudacion; i++)
             {
+                DataRow row = dtRecaudacion.Rows[i];
                 string prod = AcortarNombre(row["Producto"].ToString(), 18);
                 decimal monto = Convert.ToDecimal(row["Recaudacion"]);
                 int idx = sRecaudacion.Points.AddXY(prod, monto);
@@ -290,7 +340,7 @@ namespace CapaPresentacion
             }
             chRankingVendedores.Series.Add(sVendedores);
 
-            // 4. Evolución de Ventas por Fecha ($)
+            // 4. Evolución Detallada de Ventas por Fecha ($)
             DataTable dtEvolucion = cn.EvolucionVentas(desde, hasta);
             chEvolucionVentas.Series.Clear();
             chEvolucionVentas.ChartAreas[0].AxisX.Interval = 1;
@@ -335,6 +385,7 @@ namespace CapaPresentacion
 
             // Aplicar paleta Capybara a todos los gráficos
             TemaCapybara.AplicarTema(this);
+            EstilizarBotonHistorico();
         }
 
         private string AcortarNombre(string texto, int maxLen)

@@ -17,19 +17,61 @@ namespace CapaPresentacion
     {
         // Variables estáticas para gestionar el usuario, el menú activo y el formulario activo.
         private static Usuario user; // Variable para almacenar el usuario actual.
+        public Usuario UsuarioActual => user;
         public static IconMenuItem menuActivo = null; // Almacena el menú que está activo.
         private static Form formActivo = null; // Almacena el formulario activo.
+        private IconMenuItem subMenuGraficosDetallado;
+        private IconMenuItem subMenuGraficosHistorico;
 
         // Constructor de la clase, recibe el objeto Usuario y lo asigna.
         public Inicio(Usuario objusuario)
         {
             user = objusuario; // Asigna el usuario recibido.
             InitializeComponent(); // Inicializa los componentes visuales del formulario.
+            ConfigurarSubMenuGraficos();
             menuLateral.Renderer = new TemaCapybara.CapybaraRenderer();
             menuTitulo.Renderer = new TemaCapybara.CapybaraRenderer();
             inicio(new FrmInicio()); // Abre el formulario de inicio por defecto.
             lblIndicador.Text = "Inicio";
             lblRol.Text += " " + user.oRol.Descripcion; // Muestra el rol del usuario en la etiqueta.
+        }
+
+        private void ConfigurarSubMenuGraficos()
+        {
+            if (menuGraficos.DropDownItems.Count == 0)
+            {
+                subMenuGraficosDetallado = new IconMenuItem()
+                {
+                    Name = "subMenuGraficosDetallado",
+                    Text = "Visión Detallada (Filtros)",
+                    IconChar = IconChar.Sliders,
+                    IconColor = TemaCapybara.MenuIcono,
+                    IconSize = 18,
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+                    BackColor = TemaCapybara.FondoLateral,
+                    ForeColor = TemaCapybara.MenuTexto
+                };
+                subMenuGraficosDetallado.Click += (s, e) => AbrirGraficosDetallado();
+
+                subMenuGraficosHistorico = new IconMenuItem()
+                {
+                    Name = "subMenuGraficosHistorico",
+                    Text = "Visión Histórica General",
+                    IconChar = IconChar.ChartLine,
+                    IconColor = TemaCapybara.MenuIcono,
+                    IconSize = 18,
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+                    BackColor = TemaCapybara.FondoLateral,
+                    ForeColor = TemaCapybara.MenuTexto
+                };
+                subMenuGraficosHistorico.Click += (s, e) => AbrirGraficosHistorico();
+
+                menuGraficos.DropDownItems.AddRange(new ToolStripItem[]
+                {
+                    subMenuGraficosDetallado,
+                    subMenuGraficosHistorico
+                });
+            }
         }
 
         public void pintar()
@@ -378,7 +420,7 @@ namespace CapaPresentacion
         // Evento que abre el submenú de reportes de ventas.
         private void subMenuRVentas_Click(object sender, EventArgs e)
         {
-            abrirFormulario(menuReportes, new FrmReporteVentas(this)); // Abre el formulario de reportes de ventas.
+            abrirFormulario(menuReportes, new FrmReporteVentas(this, user)); // Abre el formulario de reportes de ventas pasando el usuario actual.
             this.lblIndicador.Text = "Reporte Ventas";
         }
 
@@ -392,8 +434,19 @@ namespace CapaPresentacion
         // Evento que abre el formulario de gráficos cuando se hace clic en el menú correspondiente.
         private void menuGraficos_Click(object sender, EventArgs e)
         {
-            abrirFormulario((IconMenuItem)sender, new FrmGraficos()); // Abre el formulario de gráficos.
-            this.lblIndicador.Text = "Estadísticas y Gráficos";
+            AbrirGraficosDetallado();
+        }
+
+        public void AbrirGraficosDetallado()
+        {
+            abrirFormulario(menuGraficos, new FrmGraficos(this));
+            this.lblIndicador.Text = "Gráficos - Visión Detallada (Filtros)";
+        }
+
+        public void AbrirGraficosHistorico()
+        {
+            abrirFormulario(menuGraficos, new FrmGraficosHistorico(this));
+            this.lblIndicador.Text = "Gráficos - Visión Histórica General";
         }
 
         private void iconMenuItem9_MouseEnter(object sender, EventArgs e)

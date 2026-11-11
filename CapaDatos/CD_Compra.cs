@@ -78,7 +78,7 @@ namespace CapaDatos
                 {
                     oconexion.Open();
                     StringBuilder query = new StringBuilder();
-                    query.AppendLine("SELECT c.IdCompra, u.NombreCompleto, u.Documento,");
+                    query.AppendLine("SELECT c.IdCompra, LTRIM(RTRIM(ISNULL(u.Nombre, '') + ' ' + ISNULL(u.Apellido, ''))) AS NombreCompleto, u.Documento,");
                     query.AppendLine("pr.IdProveedor, pr.Documento AS DocumentoProveedor, pr.RazonSocial, pr.Correo,");
                     query.AppendLine("c.TipoDocumento, c.Estado, c.NumeroDocumento, c.MontoTotal,");
                     query.AppendLine("CONVERT(char(10), c.FechaRegistro, 103) AS FechaRegistro");
@@ -150,7 +150,7 @@ namespace CapaDatos
                 {
                     StringBuilder query = new StringBuilder();
                     query.AppendLine("select c.IdCompra,");
-                    query.AppendLine("u.NombreCompleto,u.Documento,");
+                    query.AppendLine("LTRIM(RTRIM(ISNULL(u.Nombre, '') + ' ' + ISNULL(u.Apellido, ''))) AS NombreCompleto,u.Documento,");
                     query.AppendLine("pr.Documento[DocumentoProveedor],pr.RazonSocial,pr.Correo,");
                     query.AppendLine("c.TipoDocumento,c.Estado,c.NumeroDocumento,c.MontoTotal,convert(char(10), c.FechaRegistro, 103)[FechaRegistro]");
                     query.AppendLine("from Compra c");
