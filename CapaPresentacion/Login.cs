@@ -116,7 +116,7 @@ namespace CapaPresentacion
             }
             else
             {
-                MessageBox.Show("No se encuentra el Usuario o las credenciales son incorrectas.\n\nUsuario demo:\nDocumento: 1234\nClave: 1234", "Alerta de Acceso", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                MessageBox.Show("No se encuentra el Usuario o las credenciales son incorrectas.", "Alerta de Acceso", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 

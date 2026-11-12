@@ -216,28 +216,33 @@ namespace CapaPresentacion
 
             CargarProductosTabla();
 
-            // Si el usuario es Vendedor (IdRol == 2), solo puede visualizar productos
+            // Si el usuario es Vendedor (IdRol == 2), solo puede visualizar productos activos (no puede ver productos inactivos)
             if (EsVendedor)
             {
                 groupBox1.Visible = false;
                 rjButton1.Visible = false;    // Botón Guardar (+)
                 BtnEliminar2.Visible = false; // Botón Eliminar
                 BtnLimpiar2.Visible = false;  // Botón Limpiar
+                lblFiltroEstado.Visible = false;
+                comboFiltroEstado.Visible = false;
+                comboFiltroEstado.Enabled = false;
+
                 if (dgvData.Columns.Contains("btnseleccionar"))
                 {
                     dgvData.Columns["btnseleccionar"].Visible = false;
                 }
 
-                // Ajustar la vista de búsqueda y tabla para modo solo visualización
+                // Ajustar la vista de búsqueda y tabla para modo solo visualización de productos activos
                 label5.Location = new Point(80, 45);
-                BtnGuardar2.Location = new Point(90, 55);
-                lblFiltroEstado.Location = new Point(230, 67);
-                comboFiltroEstado.Location = new Point(265, 64);
-                label11.Location = new Point(420, 67);
-                comboBusqueda.Location = new Point(498, 64);
-                txtBusqueda.Location = new Point(610, 60);
-                rjButton5.Location = new Point(730, 60);
-                rjButton4.Location = new Point(782, 60);
+                BtnGuardar2.Location = new Point(95, 55);
+                BtnGuardar2.Size = new Size(155, 41);
+                label11.Location = new Point(280, 67);
+                comboBusqueda.Location = new Point(365, 64);
+                comboBusqueda.Size = new Size(145, 29);
+                txtBusqueda.Location = new Point(525, 60);
+                txtBusqueda.Size = new Size(185, 36);
+                rjButton5.Location = new Point(722, 60);
+                rjButton4.Location = new Point(778, 60);
 
                 dgvData.Location = new Point(80, 125);
                 dgvData.Size = new Size(765, 455);
@@ -248,6 +253,11 @@ namespace CapaPresentacion
         {
             dgvData.Rows.Clear();
             List<Producto> listaProductos = new CN_Producto().Listar();
+            if (EsVendedor)
+            {
+                // El vendedor no puede ver productos inactivos
+                listaProductos = listaProductos.Where(p => p.Estado == true).ToList();
+            }
             foreach (Producto item in listaProductos)
             {
                 string nombreProveedor = (item.oProveedor != null && !string.IsNullOrWhiteSpace(item.oProveedor.RazonSocial))
@@ -280,8 +290,8 @@ namespace CapaPresentacion
         {
             if (dgvData.Rows.Count == 0) return;
 
-            int filtroEstado = -1;
-            if (comboFiltroEstado != null && comboFiltroEstado.SelectedItem is OpcionesCombo ocEst)
+            int filtroEstado = EsVendedor ? 1 : -1;
+            if (!EsVendedor && comboFiltroEstado != null && comboFiltroEstado.SelectedItem is OpcionesCombo ocEst)
             {
                 filtroEstado = Convert.ToInt32(ocEst.Valor);
             }

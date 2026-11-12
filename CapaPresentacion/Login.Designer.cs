@@ -150,7 +150,7 @@ namespace CapaPresentacion
             this.campoDNI.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
             this.campoDNI.PasswordChar = false;
             this.campoDNI.PlaceholderColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(130)))), ((int)(((byte)(115)))));
-            this.campoDNI.PlaceholderText = "Número de documento (ej. 1234)";
+            this.campoDNI.PlaceholderText = "Número de documento";
             this.campoDNI.ShortcutsEnabled = false;
             this.campoDNI.Size = new System.Drawing.Size(340, 36);
             this.campoDNI.TabIndex = 6;
@@ -225,8 +225,9 @@ namespace CapaPresentacion
             this.lblCredencialesHint.Name = "lblCredencialesHint";
             this.lblCredencialesHint.Size = new System.Drawing.Size(340, 22);
             this.lblCredencialesHint.TabIndex = 10;
-            this.lblCredencialesHint.Text = "Credenciales de prueba: 1234 / 1234";
+            this.lblCredencialesHint.Text = "";
             this.lblCredencialesHint.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblCredencialesHint.Visible = false;
             // 
             // lblFooter
             // 
@@ -299,7 +300,7 @@ namespace CapaPresentacion
             this.lblHeroBadge.Name = "lblHeroBadge";
             this.lblHeroBadge.Size = new System.Drawing.Size(425, 25);
             this.lblHeroBadge.TabIndex = 6;
-            this.lblHeroBadge.Text = "✦ Deportivas   ✦ Vestir   ✦ Botas   ✦ Sandalias   ✦ Mocasines";
+            this.lblHeroBadge.Text = "✦ Zapatillas Deportivas   ✦ Zapatillas Urbanas   ✦ Estilo & Confort";
             // 
             // btnSalir
             // 
